@@ -280,6 +280,10 @@ conf[key] = belief[statement] / denom</pre>
     <p class="cl">Никакого самозачёта</p>
     <p>Вердикт фазы — <code class="inl">ok = all(rc == 0)</code>, выводится исключительно из захваченных кодов возврата. Мнение агента вердиктом не является.</p>
   </div>
+  <div class="callout ok">
+    <p class="cl">Изоляция приёмки</p>
+    <p>Фазы <code class="inl">apply</code>/<code class="inl">checks</code> идут с <code class="inl">SVOD_STATE = .accept_state.json</code> — отдельным временным файлом. Поэтому <code class="inl">svod.py seed</code> внутри тестов <strong>не перезаписывает рабочую базу</strong> <code class="inl">svod.json</code>: синтетика приёмки живёт в изоляции, живая база растёт сама. Ядро читает путь состояния из переменной окружения, поэтому harvest/dedup/проверки подхватывают изоляцию автоматически.</p>
+  </div>
 
   <h2 id="s7"><span class="n">§7 </span>Журнал и воспроизводимость</h2>
   <p>На каждую попытку в <code class="inl">journal.jsonl</code> дописывается строка: время, id ступени, git sha (или «откат»), вердикт и захваченный вывод всех команд. Это «СВОД о собственной разработке»: запись = утверждение «ступень работает» с провенансом.</p>
@@ -331,7 +335,7 @@ conf[key] = belief[statement] / denom</pre>
     </tbody>
   </table>
   <p><code class="inl">ratchet tick</code> вешается на сердцебиение/cron OpenClaw: один удар = один tick. Сводку OpenClaw доставляет человеку в чат; человек отвечает одобрением следующей ступени, командой <code class="inl">ship</code> или запросом разбора. Так автономный фон не может убежать вперёд — каждый зуб фиксирует человек.</p>
-  <p class="lead" style="margin-top:1.4em"><strong>На момент сборки:</strong> T1 <span class="st ship">shipped</span>, T2 <span class="st pass">passed</span>, T3 <span class="st pend">pending</span> — лестница ждёт человека.</p>
+  <p class="lead" style="margin-top:1.4em"><strong>На момент сборки:</strong> проведены реальные ступени развития СВОДа — R1 «настоящий harvest» <span class="st ship">shipped</span>, R2 «дедупликация и эхо» <span class="st ship">shipped</span>, R3 «семантическое сопоставление» <span class="st pend">pending</span> — лестница ждёт человека.</p>
 
   <footer>
     <b>Храповик · реализация</b> · версия 0.1 · Python 3.10+ stdlib · git через subprocess<br>

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,7 +33,11 @@ try:
 except (AttributeError, ValueError):
     pass
 
-STATE_PATH = Path(__file__).resolve().parent / "svod.json"
+# Путь к состоянию. По умолчанию — svod.json рядом с модулем, но его можно
+# переопределить переменной окружения SVOD_STATE. Храповик пользуется этим,
+# чтобы прогонять приёмку на ОТДЕЛЬНОМ временном файле и не трогать рабочую базу.
+STATE_PATH = Path(os.environ.get("SVOD_STATE") or
+                  (Path(__file__).resolve().parent / "svod.json"))
 
 R_MIN, R_MAX = 0.05, 0.95   # надёжность не схлопывается в 0/1
 R_INIT = 0.5                # априорная надёжность нового источника

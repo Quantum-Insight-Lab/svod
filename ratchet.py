@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -41,8 +42,28 @@ ROOT = Path(__file__).resolve().parent
 LADDER_DEFAULT = ROOT / "ladder.json"
 JOURNAL = ROOT / "journal.jsonl"
 
+# Изолированный файл состояния для приёмки. apply/checks гоняются с
+# SVOD_STATE -> этот файл, поэтому рабочий svod.json никогда не перезаписывается
+# синтетикой тестов. Файл не входит в git (см. .gitignore).
+ACCEPT_STATE = ROOT / ".accept_state.json"
+
 # инлайн-личность для коммитов храповика: НЕ трогаем глобальный git config
 GIT_ID = ["-c", "user.name=ratchet", "-c", "user.email=ratchet@local"]
+
+
+def accept_env() -> dict:
+    """Окружение для подпроцессов приёмки: ядро СВОД пишет в изолированный файл."""
+    env = dict(os.environ)
+    env["SVOD_STATE"] = str(ACCEPT_STATE)
+    return env
+
+
+def reset_accept_state() -> None:
+    """Свежий старт приёмки: убрать прошлый изолированный файл состояния."""
+    try:
+        ACCEPT_STATE.unlink()
+    except FileNotFoundError:
+        pass
 
 
 def now_iso() -> str:
@@ -52,10 +73,10 @@ def now_iso() -> str:
 # --------------------------------------------------------------------------- #
 # Песочница: всякий подпроцесс исполняется внутри каталога проекта
 # --------------------------------------------------------------------------- #
-def run_shell(cmd: str) -> dict:
+def run_shell(cmd: str, env: dict | None = None) -> dict:
     """Выполнить команду приёмки как реальный подпроцесс, захватить вывод."""
     proc = subprocess.run(
-        cmd, shell=True, cwd=str(ROOT),
+        cmd, shell=True, cwd=str(ROOT), env=env,
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     return {"cmd": cmd, "rc": proc.returncode,
@@ -147,12 +168,12 @@ def first_unshipped(ladder: list):
 # --------------------------------------------------------------------------- #
 # Приёмка (Арбитр): вердикт ТОЛЬКО из кодов возврата
 # --------------------------------------------------------------------------- #
-def run_phase(commands: list, phase: str) -> tuple[list, bool]:
+def run_phase(commands: list, phase: str, env: dict | None = None) -> tuple[list, bool]:
     """Прогнать список команд. Зелено фазы — если ВСЕ вернули 0."""
     results = []
     ok = True
     for cmd in commands:
-        r = run_shell(cmd)
+        r = run_shell(cmd, env=env)
         r["phase"] = phase
         results.append(r)
         if r["rc"] != 0:
@@ -208,12 +229,16 @@ def cmd_tick(args) -> int:
     print(f"  намерение: {step.get('intent', '')}")
     print(f"  база: {base[:10]}")
 
+    # приёмка идёт в изолированном файле состояния — рабочий svod.json не трогаем
+    env = accept_env()
+    reset_accept_state()
+
     # 3) минимальное изменение под intent (декларативный codegen ступени)
-    outputs, ok = run_phase(step.get("apply", []), "apply")
+    outputs, ok = run_phase(step.get("apply", []), "apply", env=env)
 
     # 4) приёмка ступени
     if ok:
-        check_out, ok = run_phase(step.get("checks", []), "check")
+        check_out, ok = run_phase(step.get("checks", []), "check", env=env)
         outputs += check_out
 
     verdict = "green" if ok else "red"
@@ -300,7 +325,8 @@ def cmd_verify(args) -> int:
         print(f"verify: ступень {args.id} не найдена.")
         return 1
 
-    outputs, ok = run_phase(step.get("checks", []), "check")
+    reset_accept_state()
+    outputs, ok = run_phase(step.get("checks", []), "check", env=accept_env())
     verdict = "green" if ok else "red"
     rcs = [r["rc"] for r in outputs]
 

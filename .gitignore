@@ -1,5 +1,6 @@
 # генерируемое состояние и провенанс — не входят в дерево исходников
 svod.json
+.accept_state.json
 journal.jsonl
 __pycache__/
 *.pyc
