@@ -65,7 +65,7 @@
       "python steps/check_r4.py"
     ],
     "approved": true,
-    "status": "pending"
+    "status": "passed"
   },
   {
     "id": "R5",
