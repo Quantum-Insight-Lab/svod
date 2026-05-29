@@ -45,6 +45,6 @@
       "python steps/check_r3.py"
     ],
     "approved": true,
-    "status": "passed"
+    "status": "shipped"
   }
 ]
