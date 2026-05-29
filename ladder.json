@@ -110,6 +110,6 @@
       "python steps/check_r7.py"
     ],
     "approved": true,
-    "status": "pending"
+    "status": "passed"
   }
 ]
