@@ -1,0 +1,15 @@
+[
+  {
+    "id": "BAD",
+    "title": "Заведомо падающая",
+    "intent": "Создать модуль, который не проходит свою приёмку (для проверки отката).",
+    "apply": [
+      "python -c \"open('feature_bad.py','w',encoding='utf-8').write('VALUE = 1\\n')\""
+    ],
+    "checks": [
+      "python -c \"import feature_bad; assert feature_bad.VALUE == 999\""
+    ],
+    "approved": true,
+    "status": "pending"
+  }
+]

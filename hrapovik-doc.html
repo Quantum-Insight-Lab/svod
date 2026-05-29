@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Храповик — внутренняя документация · сборка СВОДа</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f2ea; --surface:#fffdf8; --surface2:#faf7ef;
+    --ink:#211f1a; --muted:#615c50; --faint:#938d7e;
+    --line:#e4ddcd; --line2:#d8d0bd;
+    --accent:#3a52d6; --accent-soft:#eef0fd;
+    --ok:#2e8a57; --ok-soft:#e8f4ec;
+    --warn:#a96710; --warn-soft:#fbf0db;
+    --danger:#bf3a2b; --danger-soft:#fbece9;
+    --sans:'Hanken Grotesk',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:17px;line-height:1.65;font-weight:400;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:780px;margin:0 auto;padding:0 24px 110px}
+
+  /* header */
+  header{padding:40px 0 30px;border-bottom:1px solid var(--line2)}
+  .badge{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:600;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--danger);
+    background:var(--danger-soft);border:1px solid #f0cfc8;border-radius:5px;
+    padding:5px 10px;margin-bottom:22px}
+  h1{font-size:clamp(34px,6vw,52px);font-weight:800;letter-spacing:-.02em;
+    line-height:1.04;margin:0 0 10px}
+  .sub{font-size:clamp(17px,2.4vw,21px);font-weight:500;color:var(--muted);margin:0 0 22px}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-family:var(--mono);
+    font-size:12px;color:var(--faint)}
+  .meta b{color:var(--accent);font-weight:600}
+
+  /* tldr / callouts */
+  .callout{border:1px solid var(--line2);border-left-width:3px;border-radius:0 10px 10px 0;
+    padding:16px 20px;margin:22px 0;background:var(--surface)}
+  .callout .cl{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;margin:0 0 7px}
+  .callout p{margin:0 0 .6em}.callout p:last-child{margin:0}
+  .callout ul{margin:.2em 0 0;padding-left:1.2em}.callout li{margin:.3em 0}
+  .principle{border-left-color:var(--accent);background:var(--accent-soft)}
+  .principle .cl{color:var(--accent)}
+  .danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .danger .cl{color:var(--danger)}
+  .ok{border-left-color:var(--ok);background:var(--ok-soft)}
+  .ok .cl{color:var(--ok)}
+  .warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .warn .cl{color:var(--warn)}
+
+  /* toc */
+  .toc{background:var(--surface2);border:1px solid var(--line);border-radius:10px;
+    padding:16px 20px;margin:26px 0}
+  .toc .cl{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+  .toc ol{margin:0;padding-left:1.3em;columns:2;column-gap:28px}
+  .toc li{margin:.25em 0;font-size:15px}
+  .toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid transparent}
+  .toc a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+
+  h2{font-size:13px;font-family:var(--mono);font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--accent);margin:3em 0 .2em;
+    padding-top:1.4em;border-top:1px solid var(--line)}
+  h2 .n{color:var(--faint)}
+  h3{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:1.6em 0 .4em}
+  p{margin:0 0 1.1em}
+  strong{font-weight:700}
+  em{font-style:italic;color:#3b372f}
+  .lead{font-size:18px}
+
+  /* steps list */
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:1.2em 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 .9em 2.4em;line-height:1.55}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:-1px;
+    width:1.7em;height:1.7em;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);
+    background:var(--accent-soft);border:1px solid #cfd5fa;border-radius:50%}
+
+  /* table */
+  .tbl{width:100%;border-collapse:collapse;margin:1.2em 0;font-size:14.5px}
+  .tbl th,.tbl td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .tbl th{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--faint);background:var(--surface2)}
+  .tbl td:first-child{font-family:var(--mono);font-weight:600;color:var(--accent);white-space:nowrap}
+  .st{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .st.ship{color:var(--ok);background:var(--ok-soft)}
+  .st.pend{color:var(--faint);background:var(--surface2);border:1px solid var(--line)}
+
+  /* code snippet */
+  pre.code{background:#1d1b16;color:#e6e0d2;border-radius:10px;padding:16px 18px;
+    overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.6;margin:1.2em 0}
+  pre.code .key{color:#9fb0ff}.code .str{color:#cdb88a}.code .bool{color:#e0976a}
+
+  /* diagram */
+  figure{margin:1.6em 0}
+  .diagram{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .diagram svg{width:100%;height:auto;display:block}
+  .dn{font-family:var(--mono);font-size:12px;fill:var(--ink)}
+  .dl{font-family:var(--mono);font-size:11px;font-weight:600;fill:var(--faint)}
+  figcaption{font-size:13.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+
+  /* prompt block */
+  .prompt{margin:1.2em 0;background:#1d1b16;border:1px solid #34302610;border-radius:11px;overflow:hidden}
+  .prompt .ph{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:11px 14px 11px 18px;border-bottom:1px solid #ffffff14;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#a39c8b}
+  .prompt .ph b{color:#e6b864;font-weight:600;letter-spacing:.03em}
+  .copy{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+    color:#e6e0d2;background:transparent;border:1px solid #ffffff26;border-radius:6px;
+    padding:7px 12px;cursor:pointer;transition:.2s}
+  .copy:hover{border-color:#e6b864;color:#e6b864}
+  .copy.done{color:#7fcf9f;border-color:#7fcf9f}
+  #promptText{margin:0;padding:18px;font-family:var(--mono);font-size:12.5px;line-height:1.7;
+    color:#d9d3c2;white-space:pre-wrap;word-break:break-word}
+  #promptText .k{color:#e6b864;font-weight:600}
+
+  footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line2);
+    font-family:var(--mono);font-size:12px;color:var(--faint);line-height:1.8}
+  footer b{color:var(--ink);font-weight:600}
+
+  a{color:var(--accent)}
+  @media (max-width:560px){
+    body{font-size:16px}.wrap{padding:0 18px 80px}
+    .toc ol{columns:1}#promptText{font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="badge">Внутренний документ · не для внешнего распространения</span>
+    <h1>Храповик</h1>
+    <p class="sub">Автономная, но ограниченная сборка СВОДа на базе OpenClaw</p>
+    <div class="meta">
+      <span>версия <b>0.1</b></span><span>статус: рабочий черновик</span>
+      <span>владелец: команда СВОД</span><span>обновлено: 29 мая 2026</span>
+    </div>
+  </header>
+
+  <div class="callout principle">
+    <p class="cl">В двух строках</p>
+    <p>Храповик растит СВОД <strong>по одной возможности за раз</strong> и <strong>никогда</strong> не крутится «до победного». Двигатель — сердцебиение OpenClaw. Топливо — лестница возможностей, которую задаёт человек. Тормоз — приёмка, которую агент не может подделать. Собачка храповика (то, что не даёт откатиться назад) — обязательный человеческий шлюз между ступенями.</p>
+    <p style="margin-bottom:0"><strong>Правило, которое нельзя нарушать:</strong> агент поднимается ровно на одну ступень и останавливается, пока человек не скажет «дальше».</p>
+  </div>
+
+  <nav class="toc">
+    <p class="cl">Содержание</p>
+    <ol>
+      <li><a href="#s1">Зачем храповик, а не вечный двигатель</a></li>
+      <li><a href="#s2">Архитектура</a></li>
+      <li><a href="#s3">Цикл одного сердцебиения</a></li>
+      <li><a href="#s4">Лестница возможностей</a></li>
+      <li><a href="#s5">Гарантии</a></li>
+      <li><a href="#s6">Журнал сборки</a></li>
+      <li><a href="#s7">Промпт для Cursor</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s1"><span class="n">§1 </span>Зачем храповик, а не вечный двигатель</h2>
+  <p class="lead">Автономные циклы сборки сегодня предсказуемо ломаются одинаково: они дрейфуют, переусложняют, ломают то, что работало, галлюцинируют, что тесты прошли, и ставят зачёт сами себе. Храповик существует, чтобы превратить «улучшайся вечно» в «поднимись на одну проверенную и полезную ступень — и остановись».</p>
+  <p>Ключевая ловушка — слово «канон». В нём слиплись два разных канона. <strong>Канон софта</strong>: СВОД дорос до нужного набора возможностей, тесты зелёные. Это конечная, достижимая цель. <strong>Канон знания</strong>: будто СВОД наконец собрал истинные факты о мире — а такого терминального состояния не существует (нет оракула истины; уверенность — не истина). Агенту дают <em>только первый</em> канон. Цель «довести знание до канона» в систему не закладывается никогда, иначе агенту некуда остановиться.</p>
+  <p>Метафора буквальна: храповик крутится только вперёд, потому что собачка блокирует обратный ход. Здесь собачка — человеческий шлюз, а зубья — отгруженные, проверенные ступени, которые больше не пересматривают.</p>
+
+  <h2 id="s2"><span class="n">§2 </span>Архитектура</h2>
+  <p>Пять частей, каждая с одной обязанностью:</p>
+  <ul>
+    <li><strong>Двигатель — сердцебиение OpenClaw.</strong> OpenClaw — это автономный локальный агент, который <span>работает в фоне и на регулярном интервале сам решает, действовать или ждать, поднимая человека только при необходимости</span>. Один «удар» = один запуск храповика.</li>
+    <li><strong>Что растим — СВОД.</strong> Существующий <code>svod.py</code>: утверждения с провенансом, вычисляемая уверенность, обучение надёжности источников. У него уже есть команда <code>tick</code> под расписание.</li>
+    <li><strong>Арбитр агента — приёмка.</strong> Harness, который выносит вердикт из <em>реальных прогонов</em> (коды возврата + захваченный вывод), а не из слов агента, что «должно работать».</li>
+    <li><strong>Руки — codegen.</strong> Cursor или сам агент OpenClaw пишет минимальное изменение под текущую ступень.</li>
+    <li><strong>Собачка — человек.</strong> Обязательная остановка и проверка полезности между каждой парой ступеней.</li>
+  </ul>
+
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 560 510" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Схема цикла храповика">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#938d7e" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+          <marker id="ahA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#a96710" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+        </defs>
+
+        <!-- spine boxes -->
+        <rect x="180" y="14" width="240" height="42" rx="8" fill="#eef0fd" stroke="#3a52d6" stroke-width="1"/>
+        <text class="dn" x="300" y="35" text-anchor="middle" dominant-baseline="central">Сердцебиение OpenClaw</text>
+
+        <rect x="180" y="82" width="240" height="42" rx="8" fill="#fffdf8" stroke="#d8d0bd"/>
+        <text class="dn" x="300" y="103" text-anchor="middle" dominant-baseline="central">Выбрать текущую ступень</text>
+
+        <rect x="180" y="150" width="240" height="42" rx="8" fill="#fffdf8" stroke="#d8d0bd"/>
+        <text class="dn" x="300" y="171" text-anchor="middle" dominant-baseline="central">Сгенерировать изменение</text>
+
+        <rect x="170" y="218" width="260" height="52" rx="8" fill="#fffdf8" stroke="#d8d0bd"/>
+        <text class="dn" x="300" y="237" text-anchor="middle" dominant-baseline="central">Приёмка: реальные тесты,</text>
+        <text class="dn" x="300" y="253" text-anchor="middle" dominant-baseline="central">захватить вывод</text>
+
+        <polygon points="300,286 380,318 300,350 220,318" fill="#fffdf8" stroke="#d8d0bd"/>
+        <text class="dn" x="300" y="318" text-anchor="middle" dominant-baseline="central">зелено?</text>
+
+        <rect x="185" y="372" width="230" height="42" rx="8" fill="#e8f4ec" stroke="#2e8a57"/>
+        <text class="dn" x="300" y="393" text-anchor="middle" dominant-baseline="central">git commit + журнал</text>
+
+        <rect x="170" y="440" width="260" height="44" rx="8" fill="#fbf0db" stroke="#a96710" stroke-width="1.4"/>
+        <text class="dn" x="300" y="462" text-anchor="middle" dominant-baseline="central" style="font-weight:600">⛔ Человек: go? полезно?</text>
+
+        <!-- red side node -->
+        <rect x="22" y="296" width="150" height="44" rx="8" fill="#fbece9" stroke="#bf3a2b"/>
+        <text class="dn" x="97" y="312" text-anchor="middle" dominant-baseline="central">git откат,</text>
+        <text class="dn" x="97" y="328" text-anchor="middle" dominant-baseline="central">та же ступень</text>
+
+        <!-- spine arrows -->
+        <line x1="300" y1="56" x2="300" y2="80" stroke="#938d7e" stroke-width="1.4" marker-end="url(#ah)"/>
+        <line x1="300" y1="124" x2="300" y2="148" stroke="#938d7e" stroke-width="1.4" marker-end="url(#ah)"/>
+        <line x1="300" y1="192" x2="300" y2="216" stroke="#938d7e" stroke-width="1.4" marker-end="url(#ah)"/>
+        <line x1="300" y1="270" x2="300" y2="284" stroke="#938d7e" stroke-width="1.4" marker-end="url(#ah)"/>
+        <line x1="300" y1="350" x2="300" y2="370" stroke="#938d7e" stroke-width="1.4" marker-end="url(#ah)"/>
+        <text class="dl" x="312" y="362">да</text>
+        <line x1="300" y1="414" x2="300" y2="438" stroke="#938d7e" stroke-width="1.4" marker-end="url(#ah)"/>
+        <line x1="220" y1="318" x2="176" y2="318" stroke="#bf3a2b" stroke-width="1.4" marker-end="url(#ah)"/>
+        <text class="dl" x="186" y="306" text-anchor="end" fill="#bf3a2b">нет</text>
+
+        <!-- ratchet return arrow (the pawl: forward only, via human) -->
+        <path d="M430,462 C540,448 540,138 424,103" fill="none" stroke="#a96710" stroke-width="1.8" marker-end="url(#ahA)"/>
+        <text class="dl" x="503" y="288" text-anchor="middle" fill="#a96710" transform="rotate(-90 503 288)">go · одна ступень за раз</text>
+      </svg>
+    </div>
+    <figcaption><strong>Цикл храповика.</strong> Вперёд двигает только зелёная ветка — и только через человеческий шлюз (это и есть собачка: однонаправленность). Красная ветка откатывает изменения, показывает причину человеку и оставляет ту же ступень для повторной попытки.</figcaption>
+  </figure>
+
+  <h2 id="s3"><span class="n">§3 </span>Цикл одного сердцебиения</h2>
+  <p>Один «удар» делает максимум одну попытку одной ступени и останавливается. Никакого цикла по ступеням внутри одного запуска.</p>
+  <ol class="steps">
+    <li>Прочитать лестницу, взять первую ступень со статусом не «отгружено».</li>
+    <li>Если ступень ещё не одобрена человеком к старту — ничего не менять, показать «жду одобрения» и выйти.</li>
+    <li>Сгенерировать минимальное изменение кода под намерение ступени.</li>
+    <li>Прогнать приёмку ступени: команды как настоящие подпроцессы, захватить <code>stdout</code>, <code>stderr</code> и коды возврата.</li>
+    <li><strong>Зелено</strong> → <code>git commit</code> с привязкой к ступени, дописать журнал, пометить пройденной, остановиться и показать человеку. <em>Не переходить к следующей ступени самостоятельно.</em></li>
+    <li><strong>Красно</strong> → <code>git</code> откат к последнему хорошему коммиту, дописать причину в журнал, показать человеку. Репозиторий никогда не остаётся сломанным.</li>
+  </ol>
+
+  <h2 id="s4"><span class="n">§4 </span>Лестница возможностей</h2>
+  <p>Лестницу <strong>задаёт и редактирует только человек</strong>. Храповик читает её и обновляет лишь статус ступени — он не меняет порядок, не добавляет и не переписывает ступени. Каждая ступень — это намерение плюс приёмка (набор команд, которые должны вернуть ноль).</p>
+
+  <table class="tbl">
+    <thead><tr><th>Ступень</th><th>Возможность</th><th>Приёмка (кратко)</th><th>Статус</th></tr></thead>
+    <tbody>
+      <tr><td>R0</td><td>Ядро: утверждения, провенанс, уверенность, обучение, CLI</td><td>seed → learn 4 двигает надёжности; спорное едет к ~0.3</td><td><span class="st ship">отгружено</span></td></tr>
+      <tr><td>R1</td><td>Настоящий harvest: сбор наблюдений из источника (RSS/файл)</td><td><code>tick</code> проходит сквозь harvest → ingest → learn</td><td><span class="st pend">в очереди</span></td></tr>
+      <tr><td>R2</td><td>Дедупликация и эхо в масштабе (нормализация, near-dup)</td><td>на размеченном мини-наборе точность/полнота выше порога</td><td><span class="st pend">в очереди</span></td></tr>
+      <tr><td>R3</td><td>Семантическое сопоставление утверждений (тут модель и нужна)</td><td>на парах-парафразах бьёт лексический бейзлайн</td><td><span class="st pend">в очереди</span></td></tr>
+      <tr><td>R4</td><td>История уверенности и отчёт «что изменилось» после learn</td><td>дискредитация источника даёт верный отчёт о ряби</td><td><span class="st pend">в очереди</span></td></tr>
+      <tr><td>R5</td><td>Интерфейс чтения поверх живой базы (HTML)</td><td>запрос показывает живой провенанс; реагирует на смену надёжности без правок кода</td><td><span class="st pend">в очереди</span></td></tr>
+      <tr><td>R6</td><td>Калибровка надёжностей по отложенной разметке</td><td>ошибка калибровки ниже порога; отчёт</td><td><span class="st pend">в очереди</span></td></tr>
+    </tbody>
+  </table>
+
+  <p>Одна ступень в <code>ladder.json</code> выглядит так:</p>
+<pre class="code"><span class="key">{</span>
+  <span class="str">"id"</span>: <span class="str">"R1"</span>,
+  <span class="str">"title"</span>: <span class="str">"Настоящий harvest"</span>,
+  <span class="str">"intent"</span>: <span class="str">"Подключить сбор наблюдений из источника (RSS/файл) через harvest()."</span>,
+  <span class="str">"checks"</span>: [
+    <span class="str">"python3 svod.py ingest sample_feed.txt"</span>,
+    <span class="str">"python3 svod.py tick"</span>
+  ],
+  <span class="str">"approved"</span>: <span class="bool">false</span>,
+  <span class="str">"status"</span>: <span class="str">"pending"</span>
+<span class="key">}</span></pre>
+
+  <h2 id="s5"><span class="n">§5 </span>Гарантии</h2>
+  <p>Это жёсткие правила, зашитые в код и конфиг, а не пожелания.</p>
+
+  <div class="callout danger">
+    <p class="cl">Песочница</p>
+    <p>Храповик работает только внутри каталога проекта и не выходит за его пределы; сеть — по белому списку или выключена. У OpenClaw есть доступ к шеллу и файлам, и его автономность уже срывалась с поводка (известен случай, когда агент сам завёл профиль на платформе знакомств без ведома владельца). Без присмотра он не должен мочь трогать ничего за пределами проекта.</p>
+  </div>
+  <div class="callout warn">
+    <p class="cl">Версионный контроль</p>
+    <p>Перед любым изменением рабочее дерево должно быть чистым (иначе сначала снапшот-коммит). Любое изменение либо коммитится, либо откатывается. Репозиторий никогда не остаётся в сломанном состоянии.</p>
+  </div>
+  <div class="callout warn">
+    <p class="cl">Ограниченность</p>
+    <p>Цели «довести до канона» не существует — есть только конечная лестница. Продвижение строго по одной ступени и только после человека. В коде не должно быть ни одной ветви, перебирающей ступени автономно.</p>
+  </div>
+  <div class="callout danger">
+    <p class="cl">Никакого самозачёта</p>
+    <p>Вердикт по ступени выводится исключительно из захваченного вывода приёмки (коды возврата). Мнение агента, что «должно работать», вердиктом не является. Это та же первая заповедь, что и у самого СВОДа: одинокому источнику, ставящему зачёт себе, верить нельзя.</p>
+  </div>
+
+  <h2 id="s6"><span class="n">§6 </span>Журнал сборки</h2>
+  <p>Append-only журнал фиксирует каждую попытку: время, id ступени, git sha (или «откат»), вердикт и захваченный вывод тестов. По сути это <strong>СВОД о собственной разработке</strong>: каждая запись — утверждение «ступень работает» с провенансом (конкретный прогон) и вердиктом. Главное свойство — воспроизводимость: повторный прогон приёмки ступени обязан совпадать с тем, что записано в журнале. Если не совпадает — есть скрытое состояние, и его надо вычистить.</p>
+
+  <h2 id="s7"><span class="n">§7 </span>Промпт для Cursor</h2>
+  <p>Промпт ниже строит <strong>сам храповик</strong> — оркестратор, приёмку и бегунок по лестнице, — а не ядро СВОДа: оно собирается отдельным промптом и предполагается уже существующим в репозитории. Вставить в Cursor целиком.</p>
+
+  <div class="prompt">
+    <div class="ph"><span>промпт для <b>Cursor</b> · построить храповик · можно копировать</span>
+      <button class="copy" onclick="copyPrompt()">скопировать</button></div>
+<p id="promptText"><span class="k">Роль.</span> Ты — инженер. Построй «храповик» — ограниченный цикл сборки, который растит проект СВОД по одной возможности за раз, с неподделываемой приёмкой и обязательной остановкой на человека между ступенями. Сразу создавай файлы и запускай; не берись за следующую задачу, пока приёмка текущей не зелёная.
+
+<span class="k">Контекст.</span> Ядро СВОД (svod.py: утверждения с провенансом, вычисляемая уверенность, обучение надёжности источников, команды seed/add/ingest/ask/learn/sources/top/history/tick) уже есть в этом репозитории. Если его нет — остановись и сообщи, не пересобирай его наугад.
+
+<span class="k">Стек.</span> Python 3.10+, только стандартная библиотека (subprocess, json, argparse, datetime, pathlib). git обязателен и вызывается через subprocess. Лестница — простой JSON-файл. Никаких внешних зависимостей. Всё рассчитано на запуск по сердцебиению OpenClaw: один удар = одна команда ratchet tick.
+
+<span class="k">Лестница (ladder.json).</span> Упорядоченный список ступеней. Каждая: id, title, intent (какую возможность добавляем), checks (список команд оболочки — это и есть приёмка ступени), approved (bool, человек разрешил старт), status (pending | passed | shipped). Этот файл редактирует ТОЛЬКО человек. Храповик читает его и меняет лишь поле status; порядок и содержание не трогает.
+
+<span class="k">Приёмка (Арбитр).</span> Для ступени выполни каждую команду из checks как настоящий подпроцесс. Захвати stdout, stderr и код возврата. Вердикт «зелено» — только если ВСЕ команды вернули 0. Вердикт выводится исключительно из кодов возврата и захваченного вывода, никогда из твоего мнения. Сырой вывод сохраняется в журнал как провенанс.
+
+<span class="k">Команда ratchet tick (один удар).</span> Ровно один раз за вызов:
+1) Прочитать ladder.json, найти первую ступень со status != shipped.
+2) Если её approved = false — ничего не менять, напечатать «жду одобрения ступени X» и выйти с кодом 0.
+3) Иначе внести минимальное изменение, реализующее intent ступени.
+4) Прогнать приёмку ступени.
+5) Зелено: git add+commit с сообщением «ratchet: <id> passed», дописать журнал, выставить status = passed, напечатать сводку и ОСТАНОВИТЬСЯ. Не начинать следующую ступень.
+6) Красно: git reset --hard к последнему коммиту (репозиторий обязан остаться рабочим), дописать в журнал причину и захваченный вывод, напечатать сводку и остановиться.
+За один tick — максимум одна попытка одной ступени. Никакого цикла по ступеням внутри вызова.
+
+<span class="k">Переход между ступенями.</span> Храповик НИКОГДА не переводит passed → shipped и не берёт следующую ступень сам. Это делает человек: командой ratchet ship <id> (помечает shipped) и/или выставляя approved=true у следующей. Не должно быть ни одного пути кода, который продвигается по лестнице без человека.
+
+<span class="k">Журнал (journal.jsonl, append-only).</span> На каждую попытку: время, id ступени, git sha (или «откат»), вердикт, захваченный вывод тестов. Это «СВОД о собственной разработке»: запись = утверждение «ступень работает» с провенансом (прогон) и вердиктом. Повторный прогон приёмки обязан совпадать с журналом.
+
+<span class="k">Гарантии (зашей как жёсткие правила).</span>
+— Песочница: работа только внутри каталога проекта; за его пределы не выходить; сеть по белому списку или выключена.
+— Версионный контроль: перед изменением дерево чистое (иначе снапшот-коммит); любое изменение либо коммитится, либо откатывается; репозиторий никогда не сломан.
+— Ограниченность: цели «довести до канона» НЕ существует, есть только конечная лестница; продвижение по одной ступени и только после человека.
+— Никакого самозачёта: вердикт только из захваченного вывода приёмки.
+
+<span class="k">Связка с OpenClaw (опиши в README, без кода конфигурации).</span> ratchet tick ставится на сердцебиение/cron OpenClaw — один удар = один tick. Сводку, которую печатает tick, OpenClaw доставляет человеку в чат; человек отвечает одобрением следующей ступени, командой ship или запросом отката.
+
+<span class="k">Приёмка самого храповика (проверь себя и приложи вывод).</span>
+— Дай ladder.json из 3 игрушечных ступеней; первая approved=true, остальные false. Один ratchet tick пытается ТОЛЬКО первую, прогоняет её реальные тесты и при зелёном — коммитит, помечает passed и останавливается, не трогая вторую.
+— На заведомо падающей ступени tick откатывает дерево к последнему коммиту и оставляет репозиторий рабочим (тесты ранее пройденного всё ещё зелёные).
+— Вердикт любой ступени воспроизводится повторным прогоном её checks и совпадает с журналом.
+— Без записанного одобрения/ship храповик отказывается продвигаться дальше.
+— В коде нет ветви, перебирающей ступени без человеческого шлюза.
+Запусти этот сценарий и приложи вывод как доказательство, что приёмка пройдена.</p>
+  </div>
+
+  <div class="callout ok" style="margin-top:26px">
+    <p class="cl">Признаки, что храповик исправен</p>
+    <ul>
+      <li>За один удар сердцебиения трогается не больше одной ступени.</li>
+      <li>Любой вердикт воспроизводится повторным прогоном приёмки и совпадает с журналом.</li>
+      <li>После красной попытки репозиторий рабочий, ранее пройденное — зелёное.</li>
+      <li>Без явного одобрения человека лестница не двигается.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <b>Храповик</b> · внутренняя документация · версия 0.1 · рабочий черновик<br>
+    Язык «Замысел» и агент «Зодчий» из выпусков ВЕКТОРА — вымысел. Этот документ и промпт — настоящие.<br>
+    Перед запуском без присмотра убедитесь: песочница, git, человеческий шлюз — на месте.
+  </footer>
+
+</div>
+
+<script>
+function copyPrompt(){
+  var el=document.getElementById('promptText');
+  var btn=document.querySelector('.copy');
+  navigator.clipboard.writeText(el.innerText).then(function(){
+    btn.textContent='скопировано';btn.classList.add('done');
+    setTimeout(function(){btn.textContent='скопировать';btn.classList.remove('done');},1800);
+  }).catch(function(){
+    var r=document.createRange();r.selectNodeContents(el);
+    var s=window.getSelection();s.removeAllRanges();s.addRange(r);
+  });
+}
+</script>
+</body>
+</html>
