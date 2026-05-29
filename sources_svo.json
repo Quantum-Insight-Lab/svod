@@ -6,7 +6,7 @@
     { "id": "guardian",        "name": "The Guardian",       "lang": "en", "rss": "https://www.theguardian.com/world/ukraine/rss" },
     { "id": "aljazeera",       "name": "Al Jazeera",         "lang": "en", "rss": "https://www.aljazeera.com/xml/rss/all.xml" },
     { "id": "dw",              "name": "Deutsche Welle",     "lang": "en", "rss": "https://rss.dw.com/rdf/rss-en-all" },
-    { "id": "reuters",         "name": "Reuters World",      "lang": "en", "rss": "https://feeds.reuters.com/reuters/worldNews" },
+    { "id": "reuters",         "name": "Reuters (via Google News)", "lang": "en", "rss": "https://news.google.com/rss/search?q=site:reuters.com+ukraine&hl=en-US&gl=US&ceid=US:en", "note": "feeds.reuters.com закрыт с 2020; прокси через Google News" },
     { "id": "tass",            "name": "TASS",               "lang": "en", "rss": "https://tass.com/rss/v2.xml" },
     { "id": "rt",              "name": "RT News",            "lang": "en", "rss": "https://www.rt.com/rss/news/" },
     { "id": "ria",            "name": "RIA Novosti",        "lang": "ru", "rss": "https://ria.ru/export/rss2/archive/index.xml" },
@@ -14,7 +14,7 @@
     { "id": "meduza",          "name": "Meduza (EN)",        "lang": "en", "rss": "https://meduza.io/rss/en/all" },
     { "id": "ukrinform",       "name": "Ukrinform",          "lang": "en", "rss": "https://www.ukrinform.net/rss/block-lastnews" },
     { "id": "pravda",          "name": "Ukrainska Pravda",   "lang": "uk", "rss": "https://www.pravda.com.ua/rss/" },
-    { "id": "kyivindependent", "name": "The Kyiv Independent","lang": "en", "rss": "https://kyivindependent.com/feed/" },
+    { "id": "kyivindependent", "name": "The Kyiv Independent","lang": "en", "rss": "https://kyivindependent.com/feed/rss/" },
     { "id": "unian",           "name": "UNIAN",              "lang": "en", "rss": "https://rss.unian.net/site/news_eng.rss" },
     { "id": "europravda",      "name": "European Pravda",    "lang": "en", "rss": "https://www.eurointegration.com.ua/rss/" }
   ]
