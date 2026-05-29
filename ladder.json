@@ -22,7 +22,7 @@
     "checks": [
       "python -c \"import feature_calc; assert feature_calc.sub(5, 3) == 2\""
     ],
-    "approved": false,
+    "approved": true,
     "status": "pending"
   },
   {
