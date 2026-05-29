@@ -14,7 +14,7 @@
       "python -c \"import json; d=json.load(open('svod.json',encoding='utf-8')); r={n:s['reliability'] for n,s in d['sources'].items()}; assert r['reuters']>r['flatblog'] and r['nasa']>r['flatblog'], r; print('R1 ok: reuters', round(r['reuters'],3), '> flatblog', round(r['flatblog'],3))\""
     ],
     "approved": true,
-    "status": "passed"
+    "status": "shipped"
   },
   {
     "id": "R2",
