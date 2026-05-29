@@ -97,6 +97,6 @@
       "python steps/check_r6.py"
     ],
     "approved": true,
-    "status": "passed"
+    "status": "shipped"
   }
 ]
