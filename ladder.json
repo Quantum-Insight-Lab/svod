@@ -32,7 +32,7 @@
       "python steps/check_r2.py"
     ],
     "approved": true,
-    "status": "passed"
+    "status": "shipped"
   },
   {
     "id": "R3",
