@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Sample Atom Feed</title>
+  <entry>
+    <title>Drone attack reported on Black Sea port</title>
+    <link href="https://example.org/atom/1" />
+    <updated>2026-05-25T11:00:00Z</updated>
+  </entry>
+</feed>

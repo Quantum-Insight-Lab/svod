@@ -98,5 +98,18 @@
     ],
     "approved": true,
     "status": "shipped"
+  },
+  {
+    "id": "R7",
+    "title": "Сбор новостей и извлечение через LLM",
+    "intent": "Инструменты слоя сбора по домену СВО: RSS белого списка -> raw, Claude -> кандидаты (тема/утверждение) с провенансом, шлюз approved=true человеком, ingest в базу. Сеть и LLM — только в сборе, НЕ в приёмке. Приёмка детерминирована на замороженных фикстурах.",
+    "apply": [
+      "python steps/build_r7.py"
+    ],
+    "checks": [
+      "python steps/check_r7.py"
+    ],
+    "approved": true,
+    "status": "pending"
   }
 ]
