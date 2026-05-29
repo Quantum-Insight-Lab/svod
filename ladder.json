@@ -65,7 +65,7 @@
       "python steps/check_r4.py"
     ],
     "approved": true,
-    "status": "passed"
+    "status": "shipped"
   },
   {
     "id": "R5",
