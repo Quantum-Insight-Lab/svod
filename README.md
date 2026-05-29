@@ -38,6 +38,13 @@ python ratchet.py status          # состояние лестницы (read-on
 python ratchet.py verify T1       # заново прогнать checks и сверить с журналом
 ```
 
+**Windows (PowerShell):** из текущей папки не `ratchet.py status`, а одно из:
+
+```powershell
+python ratchet.py status
+.\ratchet.cmd status
+```
+
 ## Один удар (`tick`)
 
 Ровно один раз за вызов:

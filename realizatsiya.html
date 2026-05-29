@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Храповик — как это реализовано · СВОД + ratchet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f2ea; --surface:#fffdf8; --surface2:#faf7ef;
+    --ink:#211f1a; --muted:#615c50; --faint:#938d7e;
+    --line:#e4ddcd; --line2:#d8d0bd;
+    --accent:#3a52d6; --accent-soft:#eef0fd;
+    --ok:#2e8a57; --ok-soft:#e8f4ec;
+    --warn:#a96710; --warn-soft:#fbf0db;
+    --danger:#bf3a2b; --danger-soft:#fbece9;
+    --sans:'Hanken Grotesk',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:17px;line-height:1.65;font-weight:400;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:780px;margin:0 auto;padding:0 24px 110px}
+
+  header{padding:40px 0 30px;border-bottom:1px solid var(--line2)}
+  .badge{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:600;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--ok);
+    background:var(--ok-soft);border:1px solid #c5e3d1;border-radius:5px;
+    padding:5px 10px;margin-bottom:22px}
+  h1{font-size:clamp(34px,6vw,52px);font-weight:800;letter-spacing:-.02em;
+    line-height:1.04;margin:0 0 10px}
+  .sub{font-size:clamp(17px,2.4vw,21px);font-weight:500;color:var(--muted);margin:0 0 22px}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-family:var(--mono);
+    font-size:12px;color:var(--faint)}
+  .meta b{color:var(--accent);font-weight:600}
+
+  .callout{border:1px solid var(--line2);border-left-width:3px;border-radius:0 10px 10px 0;
+    padding:16px 20px;margin:22px 0;background:var(--surface)}
+  .callout .cl{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;margin:0 0 7px}
+  .callout p{margin:0 0 .6em}.callout p:last-child{margin:0}
+  .callout ul{margin:.2em 0 0;padding-left:1.2em}.callout li{margin:.3em 0}
+  .principle{border-left-color:var(--accent);background:var(--accent-soft)}
+  .principle .cl{color:var(--accent)}
+  .danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .danger .cl{color:var(--danger)}
+  .ok{border-left-color:var(--ok);background:var(--ok-soft)}
+  .ok .cl{color:var(--ok)}
+  .warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .warn .cl{color:var(--warn)}
+
+  .toc{background:var(--surface2);border:1px solid var(--line);border-radius:10px;
+    padding:16px 20px;margin:26px 0}
+  .toc .cl{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+  .toc ol{margin:0;padding-left:1.3em;columns:2;column-gap:28px}
+  .toc li{margin:.25em 0;font-size:15px}
+  .toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid transparent}
+  .toc a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+
+  h2{font-size:13px;font-family:var(--mono);font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--accent);margin:3em 0 .2em;
+    padding-top:1.4em;border-top:1px solid var(--line)}
+  h2 .n{color:var(--faint)}
+  h3{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:1.6em 0 .4em}
+  p{margin:0 0 1.1em}
+  strong{font-weight:700}
+  em{font-style:italic;color:#3b372f}
+  .lead{font-size:18px}
+  code.inl{font-family:var(--mono);font-size:.86em;background:var(--surface2);
+    border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:#4a4538}
+
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:1.2em 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 .9em 2.4em;line-height:1.55}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:-1px;
+    width:1.7em;height:1.7em;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);
+    background:var(--accent-soft);border:1px solid #cfd5fa;border-radius:50%}
+
+  .tbl{width:100%;border-collapse:collapse;margin:1.2em 0;font-size:14.5px}
+  .tbl th,.tbl td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .tbl th{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--faint);background:var(--surface2)}
+  .tbl td:first-child{font-family:var(--mono);font-weight:600;color:var(--accent);white-space:nowrap}
+  .st{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .st.ship{color:var(--ok);background:var(--ok-soft)}
+  .st.pass{color:var(--accent);background:var(--accent-soft)}
+  .st.pend{color:var(--faint);background:var(--surface2);border:1px solid var(--line)}
+
+  pre.code{background:#1d1b16;color:#e6e0d2;border-radius:10px;padding:16px 18px;
+    overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.6;margin:1.2em 0}
+  pre.code .key{color:#9fb0ff}.code .str{color:#cdb88a}.code .bool{color:#e0976a}
+  .code .cm{color:#7d7765}.code .ok{color:#7fcf9f}.code .er{color:#e08b7a}
+
+  figure{margin:1.6em 0}
+  .diagram{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .diagram svg{width:100%;height:auto;display:block}
+  .dn{font-family:var(--mono);font-size:12px;fill:var(--ink)}
+  .dl{font-family:var(--mono);font-size:11px;font-weight:600;fill:var(--faint)}
+  figcaption{font-size:13.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+
+  .files{font-family:var(--mono);font-size:13.5px;line-height:1.9;background:var(--surface2);
+    border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:1.2em 0}
+  .files b{color:var(--accent)}
+  .files .c{color:var(--faint)}
+
+  footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line2);
+    font-family:var(--mono);font-size:12px;color:var(--faint);line-height:1.8}
+  footer b{color:var(--ink);font-weight:600}
+
+  a{color:var(--accent)}
+  @media (max-width:560px){
+    body{font-size:16px}.wrap{padding:0 18px 80px}
+    .toc ol{columns:1}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="badge">Реализация · рабочий репозиторий · собрано и проверено</span>
+    <h1>Храповик: как это сделано</h1>
+    <p class="sub">Фактическая реализация СВОДа и ratchet — что лежит в репозитории и как оно работает</p>
+    <div class="meta">
+      <span>версия <b>0.1</b></span><span>стек: <b>Python 3.10+ stdlib</b></span>
+      <span>git: <b>обязателен</b></span><span>статус приёмки: <b>зелёный</b></span>
+    </div>
+  </header>
+
+  <div class="callout principle">
+    <p class="cl">В двух строках</p>
+    <p>Это спутник документа-замысла. Там — <em>что должно быть</em>; здесь — <em>что реально собрано</em>: два Python-файла без внешних зависимостей, лестница в JSON, append-only журнал и git как механизм отката. Все фрагменты ниже — из настоящего кода и настоящих прогонов.</p>
+    <p style="margin-bottom:0"><strong>Главная гарантия в коде:</strong> вердикт ступени берётся только из кодов возврата подпроцессов, а лестница не двигается без ручной правки человеком.</p>
+  </div>
+
+  <nav class="toc">
+    <p class="cl">Содержание</p>
+    <ol>
+      <li><a href="#s1">Что в репозитории</a></li>
+      <li><a href="#s2">СВОД: модель уверенности</a></li>
+      <li><a href="#s3">СВОД: обучение надёжности</a></li>
+      <li><a href="#s4">Храповик: один tick</a></li>
+      <li><a href="#s5">Человеческие шлюзы</a></li>
+      <li><a href="#s6">Гарантии в коде</a></li>
+      <li><a href="#s7">Журнал и воспроизводимость</a></li>
+      <li><a href="#s8">Приёмка: реальный вывод</a></li>
+      <li><a href="#s9">Команды и привязка к OpenClaw</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s1"><span class="n">§1 </span>Что в репозитории</h2>
+  <p class="lead">Семь артефактов. Два из них — исполняемое ядро, остальное — конфигурация, журнал и документация.</p>
+  <div class="files">
+    <div><b>svod.py</b> <span class="c">— ядро СВОД: утверждения, провенанс, уверенность, обучение источников</span></div>
+    <div><b>ratchet.py</b> <span class="c">— храповик: оркестратор + арбитр + бегунок по лестнице</span></div>
+    <div><b>ladder.json</b> <span class="c">— лестница ступеней; редактирует только человек</span></div>
+    <div><b>ladder_red_demo.json</b> <span class="c">— заведомо падающая ступень для проверки отката</span></div>
+    <div><b>journal.jsonl</b> <span class="c">— append-only журнал попыток (вне git)</span></div>
+    <div><b>ratchet.cmd</b> <span class="c">— обёртка под PowerShell</span></div>
+    <div><b>README.md / .gitignore</b> <span class="c">— инструкция и исключения</span></div>
+  </div>
+  <p>Никаких внешних зависимостей: используются только <code class="inl">subprocess</code>, <code class="inl">json</code>, <code class="inl">argparse</code>, <code class="inl">datetime</code>, <code class="inl">pathlib</code>. git вызывается через <code class="inl">subprocess</code>.</p>
+
+  <h2 id="s2"><span class="n">§2 </span>СВОД: модель уверенности</h2>
+  <p>Всё состояние СВОДа — один файл <code class="inl">svod.json</code>: источники с надёжностью, темы с утверждениями и плоский список наблюдений «кто что сказал когда». Уверенность утверждения не задаётся, а <strong>вычисляется</strong>.</p>
+  <p>Внутри темы конкурирующие версии делят «вес» — сумму надёжностей поддержавших источников. Добавлена фиктивная альтернатива <code class="inl">NULL</code> с весом <code class="inl">R_INIT = 0.5</code> — это априорный скепсис, из-за которого одинокое слабое утверждение не дотянет до 1.0, а спорная тема расщепляется вниз.</p>
+<pre class="code"><span class="cm"># уверенность(claim) = вес_поддержки / (R_INIT + сумма_весов_темы)</span>
+belief[statement] = sum(rel.get(s, R_INIT) <span class="key">for</span> s <span class="key">in</span> srcs)
+denom = R_INIT + sum(belief.values())   <span class="cm"># NULL-альтернатива</span>
+conf[key] = belief[statement] / denom</pre>
+  <p>Следствия: одинокий источник 0.5 даёт ровно <code class="inl">0.5/(0.5+0.5)=0.5</code> и никогда не 1.0; консенсус надёжных поднимает версию к ~0.83; спорная тема, где у каждой версии свой слабый источник, садится к ~0.08.</p>
+
+  <h2 id="s3"><span class="n">§3 </span>СВОД: обучение надёжности</h2>
+  <p>«Кому верить» и «во что верить» — курица и яйцо. Команда <code class="inl">learn N</code> крутит это N раз (truth discovery в духе Sums/Investment): вера в утверждение усиливает доверие к его источникам, и наоборот.</p>
+<pre class="code"><span class="key">for</span> _ <span class="key">in</span> range(iterations):
+    <span class="cm"># вера(claim) = сумма доверий поддержавших, нормируем к [0,1]</span>
+    belief[key] = sum(trust[s] <span class="key">for</span> s <span class="key">in</span> srcs)
+    belief = {k: v / max_b <span class="key">for</span> k, v <span class="key">in</span> belief.items()}
+    <span class="cm"># доверие(источник) = средняя вера его утверждений</span>
+    trust[src] = sum(belief[k] <span class="key">for</span> k <span class="key">in</span> keys) / len(keys)</pre>
+  <p>Пол и потолок (<code class="inl">R_MIN=0.05</code>, <code class="inl">R_MAX=0.95</code>) не дают надёжности схлопнуться в абсолют. На демо-данных после <code class="inl">learn 4</code>: согласные с большинством (<code class="inl">alice/bob/dave</code>) растут до 0.88–0.95, контрарные (<code class="inl">carol/erin/frank</code>) оседают к полу 0.05.</p>
+  <table class="tbl">
+    <thead><tr><th>Тема</th><th>Победившая версия</th><th>Уверенность</th></tr></thead>
+    <tbody>
+      <tr><td>вода_кипит_при</td><td>100C</td><td>0.844</td></tr>
+      <tr><td>форма_земли</td><td>шар</td><td>0.831</td></tr>
+      <tr><td>вакцины</td><td>безопасны</td><td>0.762</td></tr>
+      <tr><td>лучший_обед</td><td>пицца / суши / тако</td><td>~0.077 (спор)</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="s4"><span class="n">§4 </span>Храповик: один tick</h2>
+  <p>Команда <code class="inl">ratchet tick</code> — конечный автомат с жёсткими воротами. За вызов — максимум одна попытка одной ступени, без цикла по лестнице.</p>
+  <ol class="steps">
+    <li>Привести дерево к чистому (снапшот-коммит, если грязное), запомнить текущий коммит как <code class="inl">base</code>.</li>
+    <li>Взять первую ступень со <code class="inl">status != shipped</code>.</li>
+    <li>Если она <code class="inl">passed</code> или не <code class="inl">approved</code> — напечатать причину и выйти (код 0). Это шлюзы.</li>
+    <li>Иначе выполнить <code class="inl">apply</code> (минимальное изменение), затем <code class="inl">checks</code> как реальные подпроцессы.</li>
+    <li><strong>Зелено</strong> (все rc=0) → <code class="inl">status=passed</code>, commit «ratchet: ID passed», запись в журнал, СТОП.</li>
+    <li><strong>Красно</strong> → <code class="inl">git reset --hard base</code> + <code class="inl">git clean -fd</code>, причина в журнал, СТОП. Статус не меняется.</li>
+  </ol>
+
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 560 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Схема одного tick">
+        <rect x="180" y="14" width="240" height="42" rx="8" fill="#fffdf8" stroke="#d8d0bd"/>
+        <text class="dn" x="300" y="35" text-anchor="middle" dominant-baseline="central">tick: дерево чистое, base=HEAD</text>
+
+        <rect x="180" y="82" width="240" height="42" rx="8" fill="#fffdf8" stroke="#d8d0bd"/>
+        <text class="dn" x="300" y="103" text-anchor="middle" dominant-baseline="central">первая ступень != shipped</text>
+
+        <polygon points="300,128 392,162 300,196 208,162" fill="#fbf0db" stroke="#a96710" stroke-width="1.4"/>
+        <text class="dn" x="300" y="156" text-anchor="middle" dominant-baseline="central">approved?</text>
+        <text class="dn" x="300" y="172" text-anchor="middle" dominant-baseline="central" style="font-weight:600">шлюз человека</text>
+
+        <rect x="180" y="222" width="240" height="42" rx="8" fill="#fffdf8" stroke="#d8d0bd"/>
+        <text class="dn" x="300" y="243" text-anchor="middle" dominant-baseline="central">apply → checks (подпроцессы)</text>
+
+        <polygon points="300,278 380,310 300,342 220,310" fill="#fffdf8" stroke="#d8d0bd"/>
+        <text class="dn" x="300" y="310" text-anchor="middle" dominant-baseline="central">все rc=0?</text>
+
+        <rect x="185" y="364" width="230" height="42" rx="8" fill="#e8f4ec" stroke="#2e8a57"/>
+        <text class="dn" x="300" y="385" text-anchor="middle" dominant-baseline="central">passed · commit · журнал · СТОП</text>
+
+        <rect x="430" y="140" width="118" height="44" rx="8" fill="#fbf0db" stroke="#a96710"/>
+        <text class="dn" x="489" y="156" text-anchor="middle" dominant-baseline="central">«жду</text>
+        <text class="dn" x="489" y="172" text-anchor="middle" dominant-baseline="central">одобрения»</text>
+
+        <rect x="12" y="288" width="150" height="44" rx="8" fill="#fbece9" stroke="#bf3a2b"/>
+        <text class="dn" x="87" y="304" text-anchor="middle" dominant-baseline="central">reset --hard,</text>
+        <text class="dn" x="87" y="320" text-anchor="middle" dominant-baseline="central">журнал, СТОП</text>
+
+        <line x1="300" y1="56" x2="300" y2="80" stroke="#938d7e" stroke-width="1.4"/>
+        <line x1="300" y1="124" x2="300" y2="126" stroke="#938d7e" stroke-width="1.4"/>
+        <line x1="300" y1="196" x2="300" y2="220" stroke="#938d7e" stroke-width="1.4"/>
+        <text class="dl" x="312" y="212">да</text>
+        <line x1="392" y1="162" x2="428" y2="162" stroke="#a96710" stroke-width="1.4"/>
+        <text class="dl" x="400" y="150" fill="#a96710">нет</text>
+        <line x1="300" y1="264" x2="300" y2="276" stroke="#938d7e" stroke-width="1.4"/>
+        <line x1="300" y1="342" x2="300" y2="362" stroke="#938d7e" stroke-width="1.4"/>
+        <text class="dl" x="312" y="356">да</text>
+        <line x1="220" y1="310" x2="164" y2="310" stroke="#bf3a2b" stroke-width="1.4"/>
+        <text class="dl" x="186" y="298" text-anchor="end" fill="#bf3a2b">нет</text>
+      </svg>
+    </div>
+    <figcaption><strong>Один tick.</strong> Любая ветка заканчивается остановкой. Вперёд по лестнице tick не идёт — следующую ступень открывает человек.</figcaption>
+  </figure>
+
+  <h2 id="s5"><span class="n">§5 </span>Человеческие шлюзы (собачка)</h2>
+  <p>В коде <code class="inl">tick</code> два явных шлюза, и оба просто печатают сообщение и делают <code class="inl">return 0</code>, ничего не меняя:</p>
+<pre class="code"><span class="cm"># шлюз №1: пройденная, но не отгруженная — блокирует</span>
+<span class="key">if</span> step.get(<span class="str">"status"</span>) == <span class="str">"passed"</span>:
+    print(<span class="str">"храповик: ступень уже passed. Нужен человек: ship ..."</span>)
+    <span class="key">return</span> 0
+<span class="cm"># шлюз №2: без одобрения ничего не делаем</span>
+<span class="key">if</span> <span class="key">not</span> step.get(<span class="str">"approved"</span>, <span class="bool">False</span>):
+    print(<span class="str">"жду одобрения ступени ..."</span>)
+    <span class="key">return</span> 0</pre>
+  <p>Переход <code class="inl">passed → shipped</code> делает только команда <code class="inl">ratchet ship &lt;id&gt;</code>, а <code class="inl">approved=true</code> — только ручная правка <code class="inl">ladder.json</code>. <strong>Нет ни одной ветви кода, которая продвигает лестницу автономно.</strong></p>
+
+  <h2 id="s6"><span class="n">§6 </span>Гарантии в коде</h2>
+  <div class="callout danger">
+    <p class="cl">Песочница</p>
+    <p>Каждый подпроцесс запускается с <code class="inl">cwd = каталог проекта</code> (<code class="inl">ROOT</code>). Сетевых вызовов в коде нет. Выйти за пределы каталога нечем.</p>
+  </div>
+  <div class="callout warn">
+    <p class="cl">Версионный контроль</p>
+    <p>Перед изменением — <code class="inl">ensure_clean()</code> (снапшот-коммит, если грязно). Зелёное коммитится, красное откатывается через <code class="inl">reset --hard</code> + <code class="inl">clean -fd</code>. Личность коммитов задаётся инлайн (<code class="inl">-c user.name=ratchet</code>), глобальный git config не трогается.</p>
+  </div>
+  <div class="callout warn">
+    <p class="cl">Ограниченность</p>
+    <p>В коде нет цикла по ступеням: <code class="inl">first_unshipped()</code> берёт ровно одну, каждая ветка завершается <code class="inl">return</code>. Цели «довести до канона» не существует — есть конечная лестница.</p>
+  </div>
+  <div class="callout danger">
+    <p class="cl">Никакого самозачёта</p>
+    <p>Вердикт фазы — <code class="inl">ok = all(rc == 0)</code>, выводится исключительно из захваченных кодов возврата. Мнение агента вердиктом не является.</p>
+  </div>
+
+  <h2 id="s7"><span class="n">§7 </span>Журнал и воспроизводимость</h2>
+  <p>На каждую попытку в <code class="inl">journal.jsonl</code> дописывается строка: время, id ступени, git sha (или «откат»), вердикт и захваченный вывод всех команд. Это «СВОД о собственной разработке»: запись = утверждение «ступень работает» с провенансом.</p>
+<pre class="code">{<span class="str">"time"</span>:<span class="str">"2026-05-29T08:51:03+00:00"</span>, <span class="str">"step"</span>:<span class="str">"T1"</span>, <span class="str">"sha"</span>:<span class="str">"1dbce02..."</span>,
+ <span class="str">"verdict"</span>:<span class="str">"green"</span>, <span class="str">"checks"</span>:[{<span class="str">"cmd"</span>:<span class="str">"..."</span>,<span class="str">"rc"</span>:0,...}]}
+{<span class="str">"time"</span>:<span class="str">"2026-05-29T08:51:34+00:00"</span>, <span class="str">"step"</span>:<span class="str">"BAD"</span>, <span class="str">"sha"</span>:<span class="str">"откат"</span>,
+ <span class="str">"verdict"</span>:<span class="str">"red"</span>, <span class="str">"checks"</span>:[...<span class="str">"rc"</span>:1,<span class="str">"stderr"</span>:<span class="str">"AssertionError"</span>...]}</pre>
+  <p>Команда <code class="inl">ratchet verify &lt;id&gt;</code> заново прогоняет <code class="inl">checks</code> и сверяет коды возврата и вердикт с последней записью журнала. Расхождение означало бы скрытое состояние.</p>
+
+  <h2 id="s8"><span class="n">§8 </span>Приёмка: реальный вывод</h2>
+  <p>Сценарий приёмки самого храповика прогнан на трёх игрушечных ступенях. Ниже — фактический вывод (сокращён).</p>
+<pre class="code"><span class="cm">=== TICK #1: одобрена только T1 ===</span>
+храповик tick: ступень T1 — «Сложение»
+  [apply] $ python -c "...write('def add...')"   rc=0
+  [check] $ python -c "...assert add(2,3)==5"    rc=0
+коммит 1dbce02 «ratchet: T1 passed»; статус -> passed.
+<span class="ok">СТОП. Следующую ступень храповик сам не берёт — нужен человек.</span>
+
+<span class="cm">=== TICK на падающей ступени (откат) ===</span>
+  [check] $ ...assert VALUE==999   rc=1
+    <span class="er">err| AssertionError</span>
+откат к 28eb204; рабочее дерево чистое, репозиторий рабочий.
+
+<span class="cm">=== verify T1 ===</span>
+  текущий вердикт : green  rc=[0]
+  журнал          : green  rc=[0]
+  <span class="ok">СОВПАДАЕТ — вердикт воспроизводим.</span></pre>
+
+  <div class="callout ok">
+    <p class="cl">Все пять пунктов приёмки пройдены</p>
+    <ul>
+      <li>tick трогает ровно одну ступень и останавливается;</li>
+      <li>красная попытка откатывается, репозиторий остаётся рабочим;</li>
+      <li>вердикт воспроизводится повторным прогоном и совпадает с журналом;</li>
+      <li>без одобрения/ship лестница не двигается;</li>
+      <li>в коде нет ветви, перебирающей ступени без человека.</li>
+    </ul>
+  </div>
+
+  <h2 id="s9"><span class="n">§9 </span>Команды и привязка к OpenClaw</h2>
+  <table class="tbl">
+    <thead><tr><th>Команда</th><th>Кто</th><th>Что делает</th></tr></thead>
+    <tbody>
+      <tr><td>ratchet tick</td><td>OpenClaw</td><td>один удар: попытка одной ступени</td></tr>
+      <tr><td>ratchet status</td><td>человек</td><td>состояние лестницы (read-only)</td></tr>
+      <tr><td>ratchet ship &lt;id&gt;</td><td>человек</td><td>passed → shipped</td></tr>
+      <tr><td>ratchet verify &lt;id&gt;</td><td>человек</td><td>сверить вердикт с журналом</td></tr>
+      <tr><td>approved=true</td><td>человек</td><td>ручная правка ladder.json</td></tr>
+    </tbody>
+  </table>
+  <p><code class="inl">ratchet tick</code> вешается на сердцебиение/cron OpenClaw: один удар = один tick. Сводку OpenClaw доставляет человеку в чат; человек отвечает одобрением следующей ступени, командой <code class="inl">ship</code> или запросом разбора. Так автономный фон не может убежать вперёд — каждый зуб фиксирует человек.</p>
+  <p class="lead" style="margin-top:1.4em"><strong>На момент сборки:</strong> T1 <span class="st ship">shipped</span>, T2 <span class="st pass">passed</span>, T3 <span class="st pend">pending</span> — лестница ждёт человека.</p>
+
+  <footer>
+    <b>Храповик · реализация</b> · версия 0.1 · Python 3.10+ stdlib · git через subprocess<br>
+    Спутник документа-замысла <b>hrapovik-doc.html</b>. Все фрагменты — из настоящего кода и прогонов.
+  </footer>
+
+</div>
+</body>
+</html>

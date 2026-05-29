@@ -1,40 +1,36 @@
 [
   {
-    "id": "T1",
-    "title": "Сложение",
-    "intent": "Добавить модуль feature_calc с функцией add().",
+    "id": "R1",
+    "title": "Настоящий harvest",
+    "intent": "Подключить сбор наблюдений из сырого источника (фид) через модуль harvest.py: harvest -> ingest -> learn.",
     "apply": [
-      "python -c \"open('feature_calc.py','w',encoding='utf-8').write('def add(a, b):\\n    return a + b\\n')\""
+      "python steps/build_harvest.py"
     ],
     "checks": [
-      "python -c \"import feature_calc; assert feature_calc.add(2, 3) == 5\""
+      "python svod.py seed",
+      "python harvest.py sample_feed.txt",
+      "python -c \"import json; d=json.load(open('svod.json',encoding='utf-8')); assert any(o['source']=='reuters' for o in d['observations']), 'нет наблюдений от reuters'\"",
+      "python svod.py learn 4",
+      "python -c \"import json; d=json.load(open('svod.json',encoding='utf-8')); r={n:s['reliability'] for n,s in d['sources'].items()}; assert r['reuters']>r['flatblog'] and r['nasa']>r['flatblog'], r; print('R1 ok: reuters', round(r['reuters'],3), '> flatblog', round(r['flatblog'],3))\""
     ],
     "approved": true,
-    "status": "shipped"
+    "status": "pending"
   },
   {
-    "id": "T2",
-    "title": "Вычитание",
-    "intent": "Добавить функцию sub() в feature_calc.",
-    "apply": [
-      "python -c \"open('feature_calc.py','a',encoding='utf-8').write('def sub(a, b):\\n    return a - b\\n')\""
-    ],
-    "checks": [
-      "python -c \"import feature_calc; assert feature_calc.sub(5, 3) == 2\""
-    ],
-    "approved": true,
-    "status": "passed"
+    "id": "R2",
+    "title": "Дедупликация и эхо",
+    "intent": "Нормализация утверждений и схлопывание near-duplicate, чтобы повтор одной мысли не накручивал уверенность.",
+    "apply": [],
+    "checks": [],
+    "approved": false,
+    "status": "pending"
   },
   {
-    "id": "T3",
-    "title": "Умножение",
-    "intent": "Добавить функцию mul() в feature_calc.",
-    "apply": [
-      "python -c \"open('feature_calc.py','a',encoding='utf-8').write('def mul(a, b):\\n    return a * b\\n')\""
-    ],
-    "checks": [
-      "python -c \"import feature_calc; assert feature_calc.mul(2, 4) == 8\""
-    ],
+    "id": "R3",
+    "title": "Семантическое сопоставление",
+    "intent": "Сопоставлять утверждения-парафразы как одно (тут нужна модель); бить лексический бейзлайн на парах.",
+    "apply": [],
+    "checks": [],
     "approved": false,
     "status": "pending"
   }
