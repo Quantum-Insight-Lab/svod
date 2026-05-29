@@ -10,7 +10,7 @@
       "python -c \"import feature_calc; assert feature_calc.add(2, 3) == 5\""
     ],
     "approved": true,
-    "status": "passed"
+    "status": "shipped"
   },
   {
     "id": "T2",
