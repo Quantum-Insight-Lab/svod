@@ -101,11 +101,38 @@ python ratchet.py status
 - **Изоляция приёмки.** Тесты гоняются с `SVOD_STATE=.accept_state.json`;
   рабочий `svod.json` приёмкой не перезаписывается.
 
+## Сердцебиение и расписание
+
+`heartbeat.py` — тонкая обёртка для автозапуска: один удар = один `ratchet
+tick`. Она дописывает сводку в `beats.log` (провенанс ударов) и печатает её в
+stdout, чтобы планировщик/OpenClaw доставил человеку. Решения обёртка не
+принимает — продвижение по лестнице остаётся за человеком.
+
+```bash
+python heartbeat.py        # один удар сердцебиения
+```
+
+Поставить на расписание (один удар, скажем, раз в 10 минут):
+
+- **Windows · Планировщик задач (cron-эквивалент):**
+
+```powershell
+$action  = New-ScheduledTaskAction -Execute "python" -Argument "heartbeat.py" -WorkingDirectory "C:\Users\Admin\alien\Храповик"
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 10)
+Register-ScheduledTask -TaskName "ratchet-heartbeat" -Action $action -Trigger $trigger
+```
+
+- **Linux/macOS · cron** (`crontab -e`):
+
+```cron
+*/10 * * * * cd /path/to/Храповик && python heartbeat.py >> beats.log 2>&1
+```
+
 ## Привязка к OpenClaw
 
-`python ratchet.py tick` ставится на **сердцебиение/cron OpenClaw**: один удар
-сердцебиения = один `tick`. Сводку, которую печатает `tick`, OpenClaw
-доставляет человеку в чат. Человек отвечает одним из:
+`heartbeat.py` (или напрямую `ratchet tick`) ставится на **сердцебиение/cron
+OpenClaw**: один удар = один `tick`. Сводку доставляют человеку в чат, и он
+отвечает одним из:
 
 - одобрить следующую ступень (`approved = true` в `ladder.json`);
 - отгрузить пройденную (`ratchet ship <id>`);
@@ -113,4 +140,5 @@ python ratchet.py status
 
 Поскольку `tick` обрабатывает максимум одну ступень и останавливается на
 человеческом шлюзе, автономный фон OpenClaw не может «убежать» вперёд по
-лестнице: каждый зуб храповика фиксирует человек.
+лестнице: каждый зуб храповика фиксирует человек. Зависшая `checks`-команда
+тоже не вешает фон — её обрывает тайм-аут (`RATCHET_TIMEOUT`, по умолчанию 120с).

@@ -2,6 +2,7 @@
 svod.json
 .accept_state.json
 journal.jsonl
+beats.log
 __pycache__/
 *.pyc
 *.json.tmp

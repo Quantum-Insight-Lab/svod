@@ -47,6 +47,13 @@ JOURNAL = ROOT / "journal.jsonl"
 # синтетикой тестов. Файл не входит в git (см. .gitignore).
 ACCEPT_STATE = ROOT / ".accept_state.json"
 
+# Тайм-аут на одну команду приёмки (секунды). Зависший подпроцесс не должен
+# вешать tick навечно: по истечении он прерывается, команда считается красной.
+try:
+    CHECK_TIMEOUT = max(1, int(os.environ.get("RATCHET_TIMEOUT", "120")))
+except ValueError:
+    CHECK_TIMEOUT = 120
+
 # инлайн-личность для коммитов храповика: НЕ трогаем глобальный git config
 GIT_ID = ["-c", "user.name=ratchet", "-c", "user.email=ratchet@local"]
 
@@ -73,14 +80,46 @@ def now_iso() -> str:
 # --------------------------------------------------------------------------- #
 # Песочница: всякий подпроцесс исполняется внутри каталога проекта
 # --------------------------------------------------------------------------- #
+def _kill_tree(proc: subprocess.Popen) -> None:
+    """Убить весь процесс-дерево подпроцесса (включая внуков под shell)."""
+    if os.name == "nt":
+        # taskkill /T убивает дерево; subprocess.run timeout этого не делает
+        subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)],
+                       capture_output=True)
+    else:
+        import signal
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            proc.kill()
+
+
 def run_shell(cmd: str, env: dict | None = None) -> dict:
-    """Выполнить команду приёмки как реальный подпроцесс, захватить вывод."""
-    proc = subprocess.run(
+    """Выполнить команду приёмки как реальный подпроцесс, захватить вывод.
+
+    Команда ограничена тайм-аутом CHECK_TIMEOUT. По истечении убивается всё
+    дерево процессов (а не только верхний shell), команда возвращает ненулевой
+    код (124) -> фаза красная -> откат. Так зависание не вешает tick навечно.
+    """
+    new_group: dict = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+                       if os.name == "nt" else {"start_new_session": True})
+    proc = subprocess.Popen(
         cmd, shell=True, cwd=str(ROOT), env=env,
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, encoding="utf-8", errors="replace", **new_group,
     )
-    return {"cmd": cmd, "rc": proc.returncode,
-            "stdout": proc.stdout, "stderr": proc.stderr}
+    try:
+        out, err = proc.communicate(timeout=CHECK_TIMEOUT)
+        return {"cmd": cmd, "rc": proc.returncode, "stdout": out, "stderr": err}
+    except subprocess.TimeoutExpired:
+        _kill_tree(proc)
+        try:
+            out, err = proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            out, err = "", ""
+        err = (err or "") + (f"\n[ratchet] тайм-аут: команда не завершилась за "
+                             f"{CHECK_TIMEOUT}s — дерево процессов прервано.")
+        return {"cmd": cmd, "rc": 124, "stdout": out or "", "stderr": err}
 
 
 def git(*args: str, check: bool = True) -> subprocess.CompletedProcess:
