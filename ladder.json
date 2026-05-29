@@ -20,9 +20,18 @@
     "id": "R2",
     "title": "Дедупликация и эхо",
     "intent": "Нормализация утверждений и схлопывание near-duplicate, чтобы повтор одной мысли не накручивал уверенность.",
-    "apply": [],
-    "checks": [],
-    "approved": false,
+    "apply": [
+      "python steps/build_dedup.py"
+    ],
+    "checks": [
+      "python svod.py seed",
+      "python harvest.py echo_feed.txt",
+      "python dedup.py",
+      "python dedup.py",
+      "python svod.py learn 4",
+      "python steps/check_r2.py"
+    ],
+    "approved": true,
     "status": "pending"
   },
   {
