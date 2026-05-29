@@ -46,5 +46,57 @@
     ],
     "approved": true,
     "status": "shipped"
+  },
+  {
+    "id": "R4",
+    "title": "История уверенности и отчёт о ряби",
+    "intent": "Отчёт «что изменилось» между двумя learn: дискредитация источника даёт верный отчёт о ряби уверенностей.",
+    "apply": [
+      "python steps/build_diff_report.py"
+    ],
+    "checks": [
+      "python svod.py seed",
+      "python svod.py learn 4",
+      "python svod.py add t1 форма_земли плоская",
+      "python svod.py add t2 форма_земли плоская",
+      "python svod.py add t3 форма_земли плоская",
+      "python svod.py learn 4",
+      "python diff_report.py",
+      "python steps/check_r4.py"
+    ],
+    "approved": true,
+    "status": "pending"
+  },
+  {
+    "id": "R5",
+    "title": "Интерфейс чтения (HTML)",
+    "intent": "HTML-страница поверх живой базы: показывает уверенность и провенанс; реагирует на смену надёжности без правок кода.",
+    "apply": [
+      "python steps/build_render.py"
+    ],
+    "checks": [
+      "python svod.py seed",
+      "python svod.py learn 4",
+      "python render.py",
+      "python steps/check_r5.py"
+    ],
+    "approved": true,
+    "status": "pending"
+  },
+  {
+    "id": "R6",
+    "title": "Калибровка по отложенной разметке",
+    "intent": "Сверять модель с золотым hold-out набором: accuracy и Brier-ошибка ниже порога; отчёт о калибровке.",
+    "apply": [
+      "python steps/build_calibrate.py"
+    ],
+    "checks": [
+      "python svod.py seed",
+      "python svod.py learn 4",
+      "python calibrate.py",
+      "python steps/check_r6.py"
+    ],
+    "approved": true,
+    "status": "pending"
   }
 ]

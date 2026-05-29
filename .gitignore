@@ -3,6 +3,7 @@ svod.json
 .accept_state.json
 journal.jsonl
 beats.log
+report.html
 __pycache__/
 *.pyc
 *.json.tmp
