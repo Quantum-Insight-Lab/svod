@@ -123,6 +123,6 @@
       "python steps/check_r8.py"
     ],
     "approved": true,
-    "status": "pending"
+    "status": "passed"
   }
 ]
