@@ -111,5 +111,18 @@
     ],
     "approved": true,
     "status": "shipped"
+  },
+  {
+    "id": "R8",
+    "title": "Извлечение утверждений из тела статьи",
+    "intent": "Слой сбора: скачать тело статей по ссылкам из raw.jsonl (article_fetch, граница доверия — происхождение ссылок) и извлечь ВСЕ утверждения автора через Sonnet без фактчекинга (article_extract); источник claim'а — издание, topic канонический, цитаты как «X заявил Y». Сеть и LLM — только в сборе, НЕ в приёмке. Приёмка детерминирована на замороженной HTML-фикстуре.",
+    "apply": [
+      "python steps/build_r8.py"
+    ],
+    "checks": [
+      "python steps/check_r8.py"
+    ],
+    "approved": true,
+    "status": "pending"
   }
 ]

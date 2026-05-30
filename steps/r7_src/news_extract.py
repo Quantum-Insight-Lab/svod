@@ -12,8 +12,9 @@
 
 Окружение:
     CLAUDE_API_KEY (или ANTHROPIC_API_KEY) — ключ
-    CLAUDE_MODEL   — модель (по умолчанию claude-3-5-haiku-latest)
-Параметры запуска: BATCH=10 заголовков на вызов, LIMIT=50 заголовков за прогон.
+    CLAUDE_MODEL   — модель (по умолчанию claude-haiku-4-5-20251001)
+Параметры: BATCH=10 заголовков на вызов. EXTRACT_LIMIT=0 (по умолчанию) — весь
+некэшированный raw.jsonl за один прогон; положительное число — потолок.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ import hashlib
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,9 +34,12 @@ CANDIDATES = ROOT / "candidates.jsonl"
 CACHE = ROOT / "extract_cache.json"
 
 API_URL = "https://api.anthropic.com/v1/messages"
-MODEL = os.environ.get("CLAUDE_MODEL", "claude-3-5-haiku-latest")
+MODEL = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
 BATCH = 10
-LIMIT = 50
+try:
+    EXTRACT_LIMIT = max(0, int(os.environ.get("EXTRACT_LIMIT", "0")))
+except ValueError:
+    EXTRACT_LIMIT = 0
 TIMEOUT = 60
 
 SYSTEM = (
@@ -118,8 +123,12 @@ def call_claude(prompt: str) -> str:
             "anthropic-version": "2023-06-01",
         },
     )
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        payload = json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {exc.code} model={MODEL}: {detail[:300]}") from exc
     parts = payload.get("content", [])
     return "".join(p.get("text", "") for p in parts if p.get("type") == "text")
 
@@ -155,10 +164,12 @@ def append_candidates(rows: list[dict]) -> None:
 def main(argv: list[str] | None = None) -> int:
     cache = load_cache()
     raw = [r for r in load_raw() if headline_key(r["source"], r["title"]) not in cache]
-    raw = raw[:LIMIT]
+    if EXTRACT_LIMIT:
+        raw = raw[:EXTRACT_LIMIT]
     if not raw:
         print("news_extract: новых заголовков нет (всё в кэше)")
         return 0
+    print(f"news_extract: к обработке {len(raw)} заголовков")
     produced = 0
     for start in range(0, len(raw), BATCH):
         batch = raw[start:start + BATCH]
