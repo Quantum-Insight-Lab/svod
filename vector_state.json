@@ -1,0 +1,9 @@
+{
+  "slice": 1,
+  "slice_base_sha": "f4c3897cfdac73820f29b82eb13f3bb25da02004",
+  "moves_in_slice": 0,
+  "slice_status": "open",
+  "baseline_brier": 1.0,
+  "steps_in_slice": [],
+  "feedback_pending": []
+}

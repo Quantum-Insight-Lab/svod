@@ -35,10 +35,14 @@ import env
 
 env.load_dotenv()
 
+import env
+
+env.load_dotenv()
+
 ROOT = Path(__file__).resolve().parent
-ARTICLES = ROOT / "articles.jsonl"
-CANDIDATES = ROOT / "candidates.jsonl"
-CACHE = ROOT / "article_extract_cache.json"
+ARTICLES = env.data_path("articles.jsonl")
+CANDIDATES = env.data_path("candidates.jsonl")
+CACHE = env.data_path("article_extract_cache.json")
 
 API_URL = "https://api.anthropic.com/v1/messages"
 MODEL = (os.environ.get("ARTICLE_MODEL")
@@ -162,6 +166,7 @@ def append_candidates(rows: list[dict]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    env.ensure_data_dir()
     cache = load_cache()
     arts = [a for a in load_articles() if article_key(a["link"]) not in cache]
     if ARTICLE_LIMIT:

@@ -32,10 +32,14 @@ import env
 
 env.load_dotenv()
 
+import env
+
+env.load_dotenv()
+
 ROOT = Path(__file__).resolve().parent
-RAW = ROOT / "raw.jsonl"
-CANDIDATES = ROOT / "candidates.jsonl"
-CACHE = ROOT / "extract_cache.json"
+RAW = env.data_path("raw.jsonl")
+CANDIDATES = env.data_path("candidates.jsonl")
+CACHE = env.data_path("extract_cache.json")
 
 API_URL = "https://api.anthropic.com/v1/messages"
 MODEL = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
@@ -166,6 +170,7 @@ def append_candidates(rows: list[dict]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    env.ensure_data_dir()
     cache = load_cache()
     raw = [r for r in load_raw() if headline_key(r["source"], r["title"]) not in cache]
     if EXTRACT_LIMIT:

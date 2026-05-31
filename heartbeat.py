@@ -17,11 +17,16 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
-BEATS = ROOT / "beats.log"
+import env
+
+env.load_dotenv()
+
+ROOT = env.ROOT
+BEATS = env.data_path("beats.log")
 
 
 def main() -> int:
+    env.ensure_data_dir()
     ts = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
     proc = subprocess.run(
         [sys.executable, str(ROOT / "ratchet.py"), "tick"],

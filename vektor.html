@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Вектор — от собачки на каждом зубе к направлению и инвариантам</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f5f2ea; --surface:#fffdf8; --surface2:#faf7ef;
+    --ink:#211f1a; --muted:#615c50; --faint:#938d7e;
+    --line:#e4ddcd; --line2:#d8d0bd;
+    --accent:#3a52d6; --accent-soft:#eef0fd;
+    --vec:#6a3fb0; --vec-soft:#f1ebfa; --vec-line:#d9c9f0;
+    --ok:#2e8a57; --ok-soft:#e8f4ec;
+    --warn:#a96710; --warn-soft:#fbf0db;
+    --danger:#bf3a2b; --danger-soft:#fbece9;
+    --sans:'Hanken Grotesk',system-ui,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:17px;line-height:1.65;font-weight:400;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:780px;margin:0 auto;padding:0 24px 110px}
+
+  header{padding:40px 0 30px;border-bottom:1px solid var(--line2)}
+  .kicker{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+  .badge{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:600;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--vec);
+    background:var(--vec-soft);border:1px solid var(--vec-line);border-radius:5px;
+    padding:5px 10px}
+  .issue{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+  h1{font-size:clamp(34px,6vw,52px);font-weight:800;letter-spacing:-.02em;
+    line-height:1.04;margin:0 0 10px}
+  .sub{font-size:clamp(17px,2.4vw,21px);font-weight:500;color:var(--muted);margin:0 0 22px}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-family:var(--mono);
+    font-size:12px;color:var(--faint)}
+  .meta b{color:var(--vec);font-weight:600}
+
+  .callout{border:1px solid var(--line2);border-left-width:3px;border-radius:0 10px 10px 0;
+    padding:16px 20px;margin:22px 0;background:var(--surface)}
+  .callout .cl{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;margin:0 0 7px}
+  .callout p{margin:0 0 .6em}.callout p:last-child{margin:0}
+  .callout ul{margin:.2em 0 0;padding-left:1.2em}.callout li{margin:.3em 0}
+  .principle{border-left-color:var(--vec);background:var(--vec-soft)}
+  .principle .cl{color:var(--vec)}
+  .danger{border-left-color:var(--danger);background:var(--danger-soft)}
+  .danger .cl{color:var(--danger)}
+  .ok{border-left-color:var(--ok);background:var(--ok-soft)}
+  .ok .cl{color:var(--ok)}
+  .warn{border-left-color:var(--warn);background:var(--warn-soft)}
+  .warn .cl{color:var(--warn)}
+  .accentc{border-left-color:var(--accent);background:var(--accent-soft)}
+  .accentc .cl{color:var(--accent)}
+
+  .toc{background:var(--surface2);border:1px solid var(--line);border-radius:10px;
+    padding:16px 20px;margin:26px 0}
+  .toc .cl{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+  .toc ol{margin:0;padding-left:1.3em;columns:2;column-gap:28px}
+  .toc li{margin:.25em 0;font-size:15px}
+  .toc a{color:var(--ink);text-decoration:none;border-bottom:1px solid transparent}
+  .toc a:hover{color:var(--vec);border-bottom-color:var(--vec)}
+
+  h2{font-size:13px;font-family:var(--mono);font-weight:600;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--vec);margin:3em 0 .2em;
+    padding-top:1.4em;border-top:1px solid var(--line)}
+  h2 .n{color:var(--faint)}
+  h3{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:1.6em 0 .4em}
+  p{margin:0 0 1.1em}
+  strong{font-weight:700}
+  em{font-style:italic;color:#3b372f}
+  .lead{font-size:18px}
+  code.inl{font-family:var(--mono);font-size:.86em;background:var(--surface2);
+    border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:#4a4538}
+
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:1.2em 0}
+  ol.steps>li{counter-increment:s;position:relative;padding:0 0 .9em 2.4em;line-height:1.55}
+  ol.steps>li::before{content:counter(s);position:absolute;left:0;top:-1px;
+    width:1.7em;height:1.7em;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12px;font-weight:600;color:var(--vec);
+    background:var(--vec-soft);border:1px solid var(--vec-line);border-radius:50%}
+
+  .tbl{width:100%;border-collapse:collapse;margin:1.2em 0;font-size:14.5px}
+  .tbl th,.tbl td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  .tbl th{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--faint);background:var(--surface2)}
+  .tbl td:first-child{font-family:var(--mono);font-weight:600;color:var(--vec);white-space:nowrap}
+  .st{font-family:var(--mono);font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .st.ship{color:var(--ok);background:var(--ok-soft)}
+  .st.pass{color:var(--accent);background:var(--accent-soft)}
+  .st.pend{color:var(--faint);background:var(--surface2);border:1px solid var(--line)}
+
+  pre.code{background:#1d1b16;color:#e6e0d2;border-radius:10px;padding:16px 18px;
+    overflow:auto;font-family:var(--mono);font-size:13px;line-height:1.6;margin:1.2em 0}
+  pre.code .key{color:#9fb0ff}.code .str{color:#cdb88a}.code .bool{color:#e0976a}
+  .code .cm{color:#7d7765}.code .ok{color:#7fcf9f}.code .er{color:#e08b7a}
+  .code .vc{color:#c9a8f0}
+
+  figure{margin:1.6em 0}
+  .diagram{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .diagram svg{width:100%;height:auto;display:block}
+  .dn{font-family:var(--mono);font-size:12px;fill:var(--ink)}
+  .dl{font-family:var(--mono);font-size:11px;font-weight:600;fill:var(--faint)}
+  figcaption{font-size:13.5px;color:var(--muted);margin-top:10px;line-height:1.5}
+
+  .dash{font-family:var(--mono);font-size:13px;line-height:1.85;background:#1d1b16;color:#e6e0d2;
+    border-radius:10px;padding:16px 18px;margin:1.2em 0}
+  .dash .h{color:#c9a8f0;font-weight:600;letter-spacing:.06em}
+  .dash .g{color:#7fcf9f}.dash .r{color:#e08b7a}.dash .m{color:#7d7765}.dash .a{color:#9fb0ff}
+
+  .prompt{margin:1.2em 0;background:#1d1b16;border:1px solid #34302610;border-radius:11px;overflow:hidden}
+  .prompt .ph{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:11px 14px 11px 18px;border-bottom:1px solid #ffffff14;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#a39c8b}
+  .prompt .ph b{color:#c9a8f0;font-weight:600;letter-spacing:.03em}
+  .copy{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;
+    color:#e6e0d2;background:transparent;border:1px solid #ffffff26;border-radius:6px;
+    padding:7px 12px;cursor:pointer;transition:.2s}
+  .copy:hover{border-color:#c9a8f0;color:#c9a8f0}
+  .copy.done{color:#7fcf9f;border-color:#7fcf9f}
+  #promptText{margin:0;padding:18px;font-family:var(--mono);font-size:12.5px;line-height:1.7;
+    color:#d9d3c2;white-space:pre-wrap;word-break:break-word}
+  #promptText .k{color:#c9a8f0;font-weight:600}
+
+  footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line2);
+    font-family:var(--mono);font-size:12px;color:var(--faint);line-height:1.8}
+  footer b{color:var(--ink);font-weight:600}
+
+  a{color:var(--vec)}
+  @media (max-width:560px){
+    body{font-size:16px}.wrap{padding:0 18px 80px}
+    .toc ol{columns:1}#promptText{font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">
+      <span class="badge">Вектор · визионерский выпуск</span>
+      <span class="issue">№ 12 · продолжение «Храповика»</span>
+    </div>
+    <h1>Вектор</h1>
+    <p class="sub">Отдать ходы агенту, а человеку оставить направление и инварианты — и почему это всё ещё храповик</p>
+    <div class="meta">
+      <span>версия <b>0.1</b></span><span>статус: <b>замысел</b></span>
+      <span>предшественники: <b>hrapovik-doc · realizatsiya</b></span><span>31 мая 2026</span>
+    </div>
+  </header>
+
+  <div class="callout principle">
+    <p class="cl">В двух строках</p>
+    <p>«Храповик» поставил собачку на <em>каждый зуб</em>: агент делает один ход — человек одобряет — отгрузка. Безопасно, но человек заперт в микроменеджменте. <strong>Вектор</strong> укрупняет зерно контроля: человек один раз задаёт <em>направление</em> и <em>инварианты-формулы</em>, агент сам идёт ступень за ступенью внутри этих рамок, а собачка переезжает с каждого зуба на <em>срез</em> — раз в 3–4 хода.</p>
+    <p style="margin-bottom:0"><strong>Главный сдвиг:</strong> человек перестаёт быть автором ступеней и становится навигатором — он держит вектор, сторожит инварианты и кормит систему обратной связью от пользователей. Ступени раскладывает сам агент.</p>
+  </div>
+
+  <nav class="toc">
+    <p class="cl">Содержание</p>
+    <ol>
+      <li><a href="#s1">Слабое место храповика</a></li>
+      <li><a href="#s2">Зерно контроля: ход / срез / вектор</a></li>
+      <li><a href="#s3">Инварианты как контракт</a></li>
+      <li><a href="#s4">Две нейросети: Зодчий и Арбитр</a></li>
+      <li><a href="#s5">Срез: что смотрит человек</a></li>
+      <li><a href="#s6">Замысел: промпт, рождающий проект</a></li>
+      <li><a href="#s7">Почему это не вечный двигатель</a></li>
+      <li><a href="#s8">Честные риски</a></li>
+      <li><a href="#s9">Промпт намерения</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="s1"><span class="n">§1 </span>Слабое место храповика</h2>
+  <p class="lead">У храповика есть гарантия, которой нет почти ни у кого: он не умеет соскользнуть назад. Но за неё платят дорогой ценой — человек обязан присутствовать на <em>каждом</em> зубе.</p>
+  <p>Это сильно и слабо одновременно. Сильно — потому что между любыми двумя ступенями стоит живой шлюз, и автономный фон не может убежать. Слабо — потому что человек дёргается на каждый ход: одобряет, читает сводку, жмёт <code class="inl">ship</code>. На лестнице из сорока ступеней это сорок ручных касаний. Навигатор превращается в турникет.</p>
+  <p>Вопрос выпуска простой: <strong>что, если ходы отдать агенту целиком, а человека звать раз в 3–4 хода — на срез?</strong> Ответ требует разобраться, что в храповике на самом деле держит собачка.</p>
+
+  <div class="callout accentc">
+    <p class="cl">Тонкость, которую важно назвать</p>
+    <p>Собачка храповика — это <strong>не</strong> approve человека. Зуб держит <code class="inl">checks</code>: детерминированная приёмка на замороженных фикстурах (вспомним R7/R8 — «сеть и LLM только в сборе, НЕ в приёмке»). Approve — это подпись под <em>направлением</em>, а не перепроверка корректности. Значит корректность уже автономна. Двигать можно именно человеческую подпись, не трогая машинный зуб.</p>
+  </div>
+
+  <h2 id="s2"><span class="n">§2 </span>Зерно контроля: ход / срез / вектор</h2>
+  <p>Контроль можно держать на разном зерне. Чем мельче зерно — тем безопаснее и тем дороже для человека. Храповик выбрал самое мелкое. Вектор предлагает три уровня и оставляет человеку только верхние два.</p>
+
+  <table class="tbl">
+    <thead><tr><th>Зерно</th><th>Кто решает</th><th>Частота человека</th><th>Что фиксируется</th></tr></thead>
+    <tbody>
+      <tr><td>Ход</td><td>агент (Зодчий)</td><td>никогда</td><td>один зуб: apply + зелёные checks</td></tr>
+      <tr><td>Срез</td><td>человек</td><td>раз в 3–4 хода</td><td>блок ступеней целиком: ship или откат</td></tr>
+      <tr><td>Вектор</td><td>человек</td><td>в начале + по фидбеку</td><td>направление и инварианты</td></tr>
+    </tbody>
+  </table>
+
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 560 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Вектор, срезы и ступени">
+        <defs>
+          <marker id="vh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#6a3fb0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></marker>
+        </defs>
+        <!-- vector line -->
+        <line x1="40" y1="225" x2="520" y2="70" stroke="#6a3fb0" stroke-width="2" stroke-dasharray="2 6" marker-end="url(#vh)"/>
+        <text class="dl" x="470" y="58" fill="#6a3fb0" transform="rotate(-18 470 58)">вектор · направление</text>
+
+        <!-- ratchet steps as small teeth -->
+        <g>
+          <rect x="60" y="208" width="26" height="20" rx="3" fill="#fffdf8" stroke="#d8d0bd"/>
+          <rect x="98" y="196" width="26" height="20" rx="3" fill="#fffdf8" stroke="#d8d0bd"/>
+          <rect x="136" y="184" width="26" height="20" rx="3" fill="#fffdf8" stroke="#d8d0bd"/>
+        </g>
+        <rect x="176" y="158" width="34" height="28" rx="5" fill="#f1ebfa" stroke="#6a3fb0" stroke-width="1.4"/>
+        <text class="dl" x="193" y="200" text-anchor="middle" fill="#6a3fb0">срез</text>
+
+        <g>
+          <rect x="232" y="150" width="26" height="20" rx="3" fill="#fffdf8" stroke="#d8d0bd"/>
+          <rect x="270" y="138" width="26" height="20" rx="3" fill="#fffdf8" stroke="#d8d0bd"/>
+          <rect x="308" y="126" width="26" height="20" rx="3" fill="#fffdf8" stroke="#d8d0bd"/>
+        </g>
+        <rect x="348" y="100" width="34" height="28" rx="5" fill="#f1ebfa" stroke="#6a3fb0" stroke-width="1.4"/>
+        <text class="dl" x="365" y="142" text-anchor="middle" fill="#6a3fb0">срез</text>
+
+        <g>
+          <rect x="404" y="92" width="26" height="20" rx="3" fill="#fffdf8" stroke="#d8d0bd"/>
+          <rect x="442" y="80" width="26" height="20" rx="3" fill="#fffdf8" stroke="#d8d0bd"/>
+        </g>
+
+        <text class="dl" x="40" y="252">ступени = ходы агента</text>
+        <text class="dl" x="40" y="270" fill="#6a3fb0">фиолетовое = остановка на человека</text>
+      </svg>
+    </div>
+    <figcaption><strong>Зубья мельчают, шлюзы редеют.</strong> Агент сам кладёт 3–4 зуба вдоль вектора, человек встречает их пачкой на срезе. Откат, если нужен, тоже идёт пачкой — к началу среза.</figcaption>
+  </figure>
+
+  <h2 id="s3"><span class="n">§3 </span>Инварианты как контракт</h2>
+  <p>Если человек больше не смотрит каждый ход, его место должно занять что-то, что переживает все ходы и не пишется самим агентом. Это <strong>инварианты</strong> — глобальные формулы-условия, заданные человеком один раз и проверяемые на каждом срезе.</p>
+  <p>Разница с <code class="inl">checks</code> принципиальна. <code class="inl">checks</code> локальны и привязаны к одной ступени («функция <code class="inl">add</code> возвращает 5»). Инвариант сквозной — он про <em>всю траекторию</em> и не должен нарушаться ни на одном срезе. Это потолок, в который агент упирается, как бы он ни ходил.</p>
+
+<pre class="code"><span class="cm"># invariants.py — пишет ЧЕЛОВЕК, агент менять не может</span>
+<span class="vc">INV</span> = [
+  <span class="cm"># 1. калибровка не деградирует (база — R6 calibrate.py / Brier)</span>
+  <span class="key">lambda</span> s: s.brier <= <span class="vc">BASELINE_BRIER</span> + <span class="bool">0.02</span>,
+  <span class="cm"># 2. монотонность храповика: ни один прошлый зуб не сломан</span>
+  <span class="key">lambda</span> s: <span class="vc">all_shipped_checks_green</span>(s),
+  <span class="cm"># 3. детерминизм приёмки: ни сети, ни LLM в checks</span>
+  <span class="key">lambda</span> s: <span class="vc">no_network_calls_in_acceptance</span>(s),
+  <span class="cm"># 4. дрейф интента: косинус к исходному вектору >= 0.8</span>
+  <span class="key">lambda</span> s: <span class="vc">intent_cone</span>(s.intents, <span class="vc">VECTOR</span>) >= <span class="bool">0.8</span>,
+  <span class="cm"># 5. бюджет сложности: рост LOC и зависимостей не быстрее линейного</span>
+  <span class="key">lambda</span> s: s.loc_delta <= <span class="vc">BUDGET</span> <span class="key">and</span> s.new_deps == <span class="bool">0</span>,
+]
+<span class="cm"># срез зелёный, только если ВСЕ инварианты держатся</span>
+slice_ok = <span class="vc">all</span>(inv(snapshot) <span class="key">for</span> inv <span class="key">in</span> <span class="vc">INV</span>)</pre>
+
+  <p>Первый инвариант — буквально уже существующий в репозитории <code class="inl">calibrate.py</code> со ступени R6: Brier-ошибка ниже порога. Он просто поднимается с уровня «проверка ступени» на уровень «сторож всей траектории». Остальные — про то, что машина не может проверить про себя сама: не уехал ли смысл, не растёт ли долг, не подломан ли фундамент.</p>
+
+  <div class="callout warn">
+    <p class="cl">Кто пишет инварианты — тот и держит контроль</p>
+    <p>Если инварианты пишет та же сеть, что ходит, собачка самозатачивается под себя: срез зелёный не потому что верно, а потому что условие подогнано. Поэтому инварианты — <strong>человеческий артефакт</strong>, как <code class="inl">ladder.json</code>: агент их читает и упирается в них, но не редактирует. Ни одной ветви кода, переписывающей инварианты автономно.</p>
+  </div>
+
+  <h2 id="s4"><span class="n">§4 </span>Две нейросети: Зодчий и Арбитр</h2>
+  <p>Самозачёт — первородный грех автономной сборки (и первая заповедь самого СВОДа: одинокому источнику, ставящему зачёт себе, верить нельзя). Когда ходы отданы агенту, риск возвращается: сеть, которая пишет код, не должна писать и проверку этого кода — иначе тест зелёный по сговору с собой.</p>
+  <p>Отсюда разделение на две роли с разными промптами (в идеале — разными весами):</p>
+  <ul>
+    <li><strong>Зодчий</strong> — ходящая сеть. Берёт вектор, раскладывает на ступени, пишет <code class="inl">apply</code> и предлагает <code class="inl">checks</code>, реализует намерение. Знает <em>как построить</em>.</li>
+    <li><strong>Арбитр</strong> — гейт-сеть. Не видит, <em>как</em> Зодчий хотел пройти. Судит срез по факту: гоняет инварианты, ужесточает слабые <code class="inl">checks</code>, ловит семантический дрейф интента. Знает <em>как завалить</em>.</li>
+  </ul>
+
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 560 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Зодчий и Арбитр">
+        <rect x="30" y="40" width="180" height="64" rx="9" fill="#eef0fd" stroke="#3a52d6"/>
+        <text class="dn" x="120" y="64" text-anchor="middle" font-weight="600">Зодчий</text>
+        <text class="dl" x="120" y="84" text-anchor="middle">ходит · пишет apply+checks</text>
+
+        <rect x="350" y="40" width="180" height="64" rx="9" fill="#f1ebfa" stroke="#6a3fb0"/>
+        <text class="dn" x="440" y="64" text-anchor="middle" font-weight="600" fill="#6a3fb0">Арбитр</text>
+        <text class="dl" x="440" y="84" text-anchor="middle">судит срез по инвариантам</text>
+
+        <rect x="170" y="160" width="220" height="56" rx="9" fill="#fbf0db" stroke="#a96710" stroke-width="1.4"/>
+        <text class="dn" x="280" y="182" text-anchor="middle" font-weight="600">⛔ Человек</text>
+        <text class="dl" x="280" y="200" text-anchor="middle">вектор · инварианты · фидбек</text>
+
+        <line x1="210" y1="72" x2="348" y2="72" stroke="#938d7e" stroke-width="1.4"/>
+        <text class="dl" x="279" y="62" text-anchor="middle">ход на проверку</text>
+        <line x1="120" y1="104" x2="240" y2="158" stroke="#a96710" stroke-width="1.2" stroke-dasharray="3 4"/>
+        <line x1="440" y1="104" x2="320" y2="158" stroke="#a96710" stroke-width="1.2" stroke-dasharray="3 4"/>
+        <text class="dl" x="280" y="138" text-anchor="middle" fill="#a96710">срез приходит человеку</text>
+      </svg>
+    </div>
+    <figcaption><strong>Разорванный сговор.</strong> Зодчий не может пройти срез, договорившись сам с собой: судит независимый Арбитр, а потолок задаёт человек. Где проверка выразима кодом — Арбитр детерминирован; LLM он остаётся только для семантики (дрейф намерения).</figcaption>
+  </figure>
+
+  <h2 id="s5"><span class="n">§5 </span>Срез: что смотрит человек</h2>
+  <p>На срезе человек не читает код четырёх ступеней. Он читает <strong>дашборд траектории</strong> и отвечает на один вопрос: «мы всё ещё идём туда, куда я указал, и не сломали по дороге фундамент?» Diff намерений (база — R4 <code class="inl">diff_report</code>) и дельта калибровки делают это за минуту.</p>
+
+  <div class="dash">
+<span class="h">СРЕЗ #3 · ступени R10 → R13 · ветка vector/slice-3</span>
+<span class="m">────────────────────────────────────────────</span>
+ИНВАРИАНТЫ
+  калибровка     Brier 0.118 → 0.121   <span class="g">OK</span>  <span class="m">(порог +0.02)</span>
+  монотонность   прошлых зубьев зелёных 9/9   <span class="g">OK</span>
+  детерминизм    сеть/LLM в приёмке: нет   <span class="g">OK</span>
+  конус интента  cos(вектор) = 0.86   <span class="g">OK</span>  <span class="m">(порог 0.80)</span>
+  бюджет         LOC +214, новых зависимостей 0   <span class="g">OK</span>
+<span class="m">────────────────────────────────────────────</span>
+ДРЕЙФ НАМЕРЕНИЙ <span class="m">(diff_report)</span>
+  R10 извлечение цитат   <span class="a">в конусе</span>
+  R11 кэш статей          <span class="a">в конусе</span>
+  R12 экспорт в HTML      <span class="a">в конусе</span>
+  R13 авто-теги по теме   <span class="r">смещение 0.21 → к границе</span>
+<span class="m">────────────────────────────────────────────</span>
+ФИДБЕК ПОЛЬЗОВАТЕЛЕЙ <span class="m">(введён человеком)</span>
+  «провенанс кликабельный» ×7    <span class="a">не покрыто вектором</span>
+<span class="m">────────────────────────────────────────────</span>
+РЕШЕНИЕ:  <span class="g">ship R10–R12</span>  ·  <span class="r">откат R13</span>  ·  коррекция вектора +1
+</pre>
+  </div>
+
+  <p>Откат атомарен: git отматывает весь срез к коммиту «начало среза №3» одним движением, как храповик откатывал одну ступень. R13 ушёл к границе конуса — человек его срезает и правит вектор, добавив пользовательский запрос про кликабельный провенанс. Топливо следующего блока — не фантазия человека, а сведённый фидбек.</p>
+
+  <h2 id="s6"><span class="n">§6 </span>Замысел: промпт, рождающий проект</h2>
+  <p>Здесь в дело вступают вымышленные из прежних выпусков ВЕКТОРА конструкты — язык <strong>«Замысел»</strong> и агент <strong>«Зодчий»</strong>. Идея такая: человек пишет один промпт намерения на «Замысле», и тот <em>сразу разворачивается в проект</em> — каркас, вектор и инварианты-формулы. Дальше Зодчий берёт этот контракт и идёт сам.</p>
+  <p>«Замысел» — это не код и не свободный текст. Это структура из трёх обязательных частей, потому что без любой из них автономия небезопасна:</p>
+  <ol class="steps">
+    <li><strong>Вектор</strong> — целевое состояние <em>софта</em> (не знания): какой набор возможностей считается «достроенным». У вектора есть длина — значит есть, где остановиться.</li>
+    <li><strong>Инварианты</strong> — формулы-потолок, проверяемые на каждом срезе. То, что нельзя нарушить по дороге.</li>
+    <li><strong>Ритм</strong> — размер среза N и правило шлюза: каждые N зелёных ходов — обязательная остановка на человека.</li>
+  </ol>
+  <p>Промпт намерения порождает скелет: <code class="inl">ladder.json</code> (пустой, Зодчий наполнит ступенями), <code class="inl">invariants.py</code> (заполнен человеком), <code class="inl">vector.json</code> (направление + длина) и тот же неподделываемый арбитр приёмки из храповика. После этого человек уходит — и возвращается на первом срезе.</p>
+
+  <div class="callout principle">
+    <p class="cl">Что именно изменилось относительно храповика</p>
+    <ul>
+      <li>ступени пишет агент, а не человек — человек пишет только вектор и инварианты;</li>
+      <li>шлюз переехал с каждого зуба на срез раз в N ходов;</li>
+      <li>появился независимый Арбитр, чтобы ходящая сеть не зачитывала себя сама;</li>
+      <li>топливо лестницы — обратная связь пользователей, сведённая человеком в коррекцию вектора.</li>
+    </ul>
+  </div>
+
+  <h2 id="s7"><span class="n">§7 </span>Почему это не вечный двигатель</h2>
+  <p>Главный страх прежнего документа — «улучшайся вечно». Вектор его не воскрешает, и вот почему:</p>
+  <div class="callout ok">
+    <p class="cl">Собачка не исчезла — она укрупнилась</p>
+    <p>Срез — это всё та же обязательная остановка, просто зуб стал крупнее. Однонаправленность сохранена: вперёд двигает только зелёный срез, прошедший через человека. Между срезами агент свободен, но не вечен — упирается в инварианты-потолок и в конечную длину вектора.</p>
+  </div>
+  <div class="callout ok">
+    <p class="cl">Два канона по-прежнему разведены</p>
+    <p>Вектор задаёт <em>канон софта</em> (достижимое состояние возможностей) и никогда — <em>канон знания</em> (оракула истины нет). Агенту по-прежнему некуда «довести знание»; ему есть куда достроить инструмент.</p>
+  </div>
+  <div class="callout ok">
+    <p class="cl">Откат остался дешёвым на уровне зерна</p>
+    <p>Где храповик откатывал ступень, вектор откатывает срез — атомарно, через git. Репозиторий никогда не остаётся сломанным, а прошлые срезы (зубья) не пересматриваются.</p>
+  </div>
+
+  <h2 id="s8"><span class="n">§8 </span>Честные риски</h2>
+  <p>Укрупнение зерна — это укрупнение слепого пятна. За удобство платят, и цену стоит назвать прямо.</p>
+  <div class="callout danger">
+    <p class="cl">Дрейф между срезами</p>
+    <p>Каждый ход локально зелёный, но четыре хода подряд могут увести в локальный максимум или накопить долг, который виден только на срезе. Лечится узким конусом интента и жёстким бюджетом сложности в инвариантах, плюс маленьким N (3–4, не 10).</p>
+  </div>
+  <div class="callout danger">
+    <p class="cl">Корреляция Зодчего и Арбитра</p>
+    <p>Если обе роли — одна и та же модель, их слепые пятна совпадают, и «независимый» суд оказывается фикцией. Поэтому максимум инвариантов делается <strong>детерминированным кодом</strong>, а LLM-Арбитр остаётся только там, где без семантики никак (дрейф намерения). Код не сговаривается.</p>
+  </div>
+  <div class="callout danger">
+    <p class="cl">Цена ошибки на срезе</p>
+    <p>Откат среза дороже отката хода: теряются 3–4 сцепленных ступени. Это осознанный размен скорости человека на стоимость отката. Чем больше доверия системе — тем больше N; начинать стоит с малого.</p>
+  </div>
+
+  <h2 id="s9"><span class="n">§9 </span>Промпт намерения (язык «Замысел»)</h2>
+  <p>Промпт ниже не строит сам механизм (его строит промпт из «Храповика»). Он <strong>задаёт замысел</strong>: вектор, инварианты и ритм — контракт, который Зодчий разворачивает в проект и далее ведёт автономно до первого среза. Вставить в Cursor целиком, подставив свой вектор.</p>
+
+  <div class="prompt">
+    <div class="ph"><span>замысел для <b>Зодчего</b> · задать вектор и инварианты · можно копировать</span>
+      <button class="copy" onclick="copyPrompt()">скопировать</button></div>
+<p id="promptText"><span class="k">Роль.</span> Ты — Зодчий: автономный инженер поверх механизма «храповик» (ratchet tick, неподделываемая приёмка, git-откат уже существуют в репозитории). Тебе дают ВЕКТОР и ИНВАРИАНТЫ. Ты сам раскладываешь вектор на ступени ladder.json, ходишь по ним без человека и останавливаешься на каждом срезе. Если механизма храповика в репозитории нет — остановись и сообщи, не пересобирай наугад.
+
+<span class="k">Вектор (целевое состояние СОФТА, задаёт человек).</span> [ОПИШИ ЗДЕСЬ: какой набор возможностей считается достроенным. Это конечная точка. Канон софта, НЕ канон знания: оракула истины не существует, «довести знание до истины» в цель не закладывать никогда.]
+
+<span class="k">Инварианты (потолок, человек, файл invariants.py — ТЫ ИХ НЕ РЕДАКТИРУЕШЬ).</span> Проверяются на каждом срезе; срез зелёный, только если держатся ВСЕ:
+1. Калибровка не деградирует: Brier(срез) ≤ baseline + 0.02 (база — calibrate.py).
+2. Монотонность: checks всех ранее отгруженных ступеней остаются зелёными.
+3. Детерминизм приёмки: ни сети, ни LLM в checks — только на замороженных фикстурах.
+4. Конус намерения: косинус интентов ступеней к вектору ≥ 0.80.
+5. Бюджет сложности: рост LOC ≤ заданного, новых внешних зависимостей = 0.
+
+<span class="k">Ритм (размер среза).</span> N = 4. Ты делаешь до N зелёных ходов подряд автономно, затем ОБЯЗАТЕЛЬНО останавливаешься на срез и зовёшь человека. Внутри среза — ветка vector/slice-K; её начало помечается коммитом, чтобы откат был атомарным.
+
+<span class="k">Один ход (автономно).</span> 1) Возьми/допиши следующую ступень ladder.json в сторону вектора. 2) Внеси минимальное изменение под её intent. 3) Предложи checks. 4) Прогон приёмки как реальные подпроцессы; вердикт ТОЛЬКО из кодов возврата, никогда из твоего мнения. 5) Зелено → commit, журнал, следующий ход. 6) Красно → git reset --hard к последнему зелёному, причина в журнал, повтор той же ступени.
+
+<span class="k">Срез (стоп на человека).</span> После N зелёных ходов — не продолжай. Собери дашборд: статус всех инвариантов, diff намерений (diff_report) против вектора, дельту калибровки, бюджет, нерешённый фидбек. Жди человека: он отвечает «ship срез», «откат среза» или «коррекция вектора». Без его ответа дальше не идёшь.
+
+<span class="k">Арбитр (разрыв самозачёта).</span> Инварианты судит независимый слой, а не та логика, что писала ход. Где проверка выразима кодом — делай её детерминированной. LLM-суждение допускается ТОЛЬКО для семантики (конус намерения). Ты не вправе ослаблять или переписывать инварианты.
+
+<span class="k">Топливо.</span> Новые ступени берутся из вектора и из фидбека пользователей, который человек вводит на срезе. Сам цели себе не дописывай за пределами вектора.
+
+<span class="k">Границы (жёстко).</span> Песочница — только каталог проекта; сеть по белому списку или выкл. Любое изменение либо коммитится, либо откатывается — репозиторий никогда не сломан. Цели «до канона знания» не существует — есть конечный вектор и потолок инвариантов. Ни одной ветви кода, которая проходит срез без человека или редактирует инварианты.
+
+<span class="k">Самопроверка (приложи вывод).</span> Покажи: (а) за один срез проходит ровно ≤ N ходов и затем стоп; (б) нарушенный инвариант валит срез, даже если все checks зелёные; (в) откат среза атомарен и оставляет репозиторий рабочим; (г) без ответа человека лестница не движется дальше среза.</p>
+  </div>
+
+  <div class="callout ok" style="margin-top:26px">
+    <p class="cl">Признаки, что вектор исправен</p>
+    <ul>
+      <li>между срезами человека не дёргают — он приходит раз в N ходов;</li>
+      <li>нарушенный инвариант валит срез, даже когда все локальные checks зелёные;</li>
+      <li>намерения ступеней не выходят из конуса вектора;</li>
+      <li>откат среза атомарен, прошлые срезы не пересматриваются;</li>
+      <li>новые ступени растут из вектора и фидбека, а не из самоцели агента.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <b>Вектор</b> · визионерский выпуск № 12 · продолжение «Храповика» · версия 0.1<br>
+    Язык «Замысел» и агент «Зодчий» — конструкты ВЕКТОРА, вымысел. Механизм-предшественник (ratchet, приёмка, git-откат) — настоящий и лежит в репозитории.<br>
+    Прежде чем укрупнять зерно контроля, убедитесь: инварианты пишет человек, Арбитр независим, срез — обязательная остановка.
+  </footer>
+
+</div>
+
+<script>
+function copyPrompt(){
+  var el=document.getElementById('promptText');
+  var btn=document.querySelector('.copy');
+  navigator.clipboard.writeText(el.innerText).then(function(){
+    btn.textContent='скопировано';btn.classList.add('done');
+    setTimeout(function(){btn.textContent='скопировать';btn.classList.remove('done');},1800);
+  }).catch(function(){
+    var r=document.createRange();r.selectNodeContents(el);
+    var s=window.getSelection();s.removeAllRanges();s.addRange(r);
+  });
+}
+</script>
+</body>
+</html>

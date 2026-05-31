@@ -1,10 +1,12 @@
 # генерируемое состояние и провенанс — не входят в дерево исходников
+data/*
+!data/.gitkeep
+# legacy (если артефакты ещё в корне после миграции)
 svod.json
 .accept_state.json
 journal.jsonl
 beats.log
 report.html
-# слой сбора новостей (R7): сырьё, кандидаты, кэш, ключи — не в исходники
 raw.jsonl
 candidates.jsonl
 extract_cache.json

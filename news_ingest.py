@@ -18,8 +18,12 @@ from pathlib import Path
 
 import svod
 
+import env
+
+env.load_dotenv()
+
 ROOT = Path(__file__).resolve().parent
-CANDIDATES = ROOT / "candidates.jsonl"
+CANDIDATES = env.data_path("candidates.jsonl")
 
 
 def load_candidates(path: Path) -> list[dict]:

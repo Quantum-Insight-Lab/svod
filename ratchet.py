@@ -32,6 +32,10 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import env
+
+env.load_dotenv()
+
 try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
@@ -40,12 +44,12 @@ except (AttributeError, ValueError):
 
 ROOT = Path(__file__).resolve().parent
 LADDER_DEFAULT = ROOT / "ladder.json"
-JOURNAL = ROOT / "journal.jsonl"
+JOURNAL = env.data_path("journal.jsonl")
 
 # Изолированный файл состояния для приёмки. apply/checks гоняются с
 # SVOD_STATE -> этот файл, поэтому рабочий svod.json никогда не перезаписывается
 # синтетикой тестов. Файл не входит в git (см. .gitignore).
-ACCEPT_STATE = ROOT / ".accept_state.json"
+ACCEPT_STATE = env.data_path(".accept_state.json")
 
 # Тайм-аут на одну команду приёмки (секунды). Зависший подпроцесс не должен
 # вешать tick навечно: по истечении он прерывается, команда считается красной.
@@ -67,6 +71,7 @@ def accept_env() -> dict:
 
 def reset_accept_state() -> None:
     """Свежий старт приёмки: убрать прошлый изолированный файл состояния."""
+    env.ensure_data_dir()
     try:
         ACCEPT_STATE.unlink()
     except FileNotFoundError:

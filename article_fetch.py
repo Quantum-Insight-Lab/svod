@@ -30,10 +30,14 @@ from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import env
+
+env.load_dotenv()
+
 ROOT = Path(__file__).resolve().parent
-RAW = ROOT / "raw.jsonl"
-ARTICLES = ROOT / "articles.jsonl"
-CACHE = ROOT / "article_cache.json"
+RAW = env.data_path("raw.jsonl")
+ARTICLES = env.data_path("articles.jsonl")
+CACHE = env.data_path("article_cache.json")
 TIMEOUT = 25
 USER_AGENT = "svod-article-fetch/1.0 (+research)"
 
@@ -109,6 +113,7 @@ def load_cache() -> dict:
 
 
 def save_cache(cache: dict) -> None:
+    env.ensure_data_dir()
     CACHE.write_text(json.dumps(cache, ensure_ascii=False, indent=2),
                      encoding="utf-8")
 
@@ -144,6 +149,7 @@ def fetch_html(url: str, retries: int = 3) -> str:
 
 
 def append_articles(rows: list[dict]) -> None:
+    env.ensure_data_dir()
     with ARTICLES.open("a", encoding="utf-8") as fh:
         for row in rows:
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")

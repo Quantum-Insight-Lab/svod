@@ -8,7 +8,7 @@ sources_svo.json. Разбор XML (`parse_rss`) отделён от сети, �
 Запуск (вручную, под контролем человека):
     python news_fetch.py                # все источники белого списка
     python news_fetch.py bbc tass       # только указанные id
-Результат дописывается в raw.jsonl: по строке JSON на заголовок.
+Результат дописывается в data/raw.jsonl; дубли по link не пишутся.
 """
 
 from __future__ import annotations
@@ -21,9 +21,12 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from xml.etree import ElementTree as ET
 
-ROOT = Path(__file__).resolve().parent
-SOURCES = ROOT / "sources_svo.json"
-RAW = ROOT / "raw.jsonl"
+import env
+
+env.load_dotenv()
+
+SOURCES = env.ROOT / "sources_svo.json"
+RAW = env.data_path("raw.jsonl")
 TIMEOUT = 20
 USER_AGENT = "svod-news-fetch/1.0 (+research)"
 
@@ -39,6 +42,21 @@ def load_sources() -> list[dict]:
 
 def whitelist(sources: list[dict]) -> set[str]:
     return {urlsplit(s["rss"]).netloc.lower() for s in sources}
+
+
+def known_links(path: Path) -> set[str]:
+    """Множество link уже записанных в raw.jsonl (чистая функция для приёмки)."""
+    if not path.is_file():
+        return set()
+    links: set[str] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        link = json.loads(line).get("link", "")
+        if link:
+            links.add(link)
+    return links
 
 
 def _text(el) -> str:
@@ -68,7 +86,6 @@ def parse_rss(xml_text: str) -> list[dict]:
             if ctag == "title" and not title:
                 title = _text(child)
             elif ctag == "link":
-                # RSS: текст узла; Atom: атрибут href
                 link = _text(child) or child.attrib.get("href", "") or link
             elif ctag in ("pubdate", "published", "updated", "date") and not published:
                 published = _text(child)
@@ -103,10 +120,20 @@ def fetch_source(src: dict, allowed: set[str]) -> list[dict]:
     return rows
 
 
-def append_raw(rows: list[dict]) -> None:
+def append_raw(rows: list[dict], seen: set[str]) -> int:
+    """Дописать строки в raw.jsonl, пропуская link из seen. Вернуть число новых."""
+    env.ensure_data_dir()
+    added = 0
     with RAW.open("a", encoding="utf-8") as fh:
         for row in rows:
+            link = row.get("link", "")
+            if link and link in seen:
+                continue
+            if link:
+                seen.add(link)
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+            added += 1
+    return added
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -119,16 +146,17 @@ def main(argv: list[str] | None = None) -> int:
         if not sources:
             print(f"news_fetch: нет таких источников: {sorted(want)}")
             return 1
+    seen = known_links(RAW)
     total = 0
     for src in sources:
         try:
             rows = fetch_source(src, allowed)
-            append_raw(rows)
-            total += len(rows)
-            print(f"  {src['id']:16s} +{len(rows)} заголовков")
-        except Exception as exc:  # сеть/парсинг — не валим весь прогон
+            n = append_raw(rows, seen)
+            total += n
+            print(f"  {src['id']:16s} +{n} заголовков")
+        except Exception as exc:
             print(f"  {src['id']:16s} ОШИБКА: {exc}")
-    print(f"news_fetch: всего +{total} заголовков -> {RAW.name}")
+    print(f"news_fetch: всего +{total} новых заголовков -> {RAW}")
     return 0
 
 

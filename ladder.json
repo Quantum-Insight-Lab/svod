@@ -8,7 +8,7 @@
     ],
     "checks": [
       "python svod.py seed",
-      "python harvest.py sample_feed.txt",
+      "python harvest.py fixtures/sample_feed.txt",
       "python -c \"import json,os; d=json.load(open(os.environ.get('SVOD_STATE','svod.json'),encoding='utf-8')); assert any(o['source']=='reuters' for o in d['observations']), 'нет наблюдений от reuters'\"",
       "python svod.py learn 4",
       "python -c \"import json,os; d=json.load(open(os.environ.get('SVOD_STATE','svod.json'),encoding='utf-8')); r={n:s['reliability'] for n,s in d['sources'].items()}; assert r['reuters']>r['flatblog'] and r['nasa']>r['flatblog'], r; print('R1 ok: reuters', round(r['reuters'],3), '> flatblog', round(r['flatblog'],3))\""
@@ -25,7 +25,7 @@
     ],
     "checks": [
       "python svod.py seed",
-      "python harvest.py echo_feed.txt",
+      "python harvest.py fixtures/echo_feed.txt",
       "python dedup.py",
       "python dedup.py",
       "python svod.py learn 4",
@@ -124,5 +124,57 @@
     ],
     "approved": true,
     "status": "shipped"
+  },
+  {
+    "id": "R9",
+    "title": "Структура проекта: data/, fixtures/, collect",
+    "intent": "Структура для пайплайна статей: data/, fixtures/, collect — чтобы храповик мог ходить по статьям и наполнять СВОД. Приёмка оффлайн.",
+    "apply": [
+      "python steps/build_r9.py"
+    ],
+    "checks": [
+      "python steps/check_r9.py"
+    ],
+    "approved": true,
+    "status": "pending"
+  },
+  {
+    "id": "R10",
+    "title": "Офлайн-проход по статьям",
+    "intent": "Ход по статьям на фикстурах: тела статей -> candidates с утверждениями, без сети и LLM в приёмке.",
+    "apply": [
+      "python steps/build_r10.py"
+    ],
+    "checks": [
+      "python steps/check_r10.py"
+    ],
+    "approved": false,
+    "status": "pending"
+  },
+  {
+    "id": "R11",
+    "title": "Walk -> СВОД",
+    "intent": "Собрать утверждения из статей в СВОД: article_walk -> news_ingest -> learn, оффлайн на фикстурах.",
+    "apply": [
+      "python steps/build_r11.py"
+    ],
+    "checks": [
+      "python steps/check_r11.py"
+    ],
+    "approved": false,
+    "status": "pending"
+  },
+  {
+    "id": "R12",
+    "title": "Оркестратор vector",
+    "intent": "Автономные ходы Зодчего: vector move до N ступеней, срез с арбитром инвариантов, стоп на человека.",
+    "apply": [
+      "python steps/build_r12.py"
+    ],
+    "checks": [
+      "python steps/check_r12.py"
+    ],
+    "approved": false,
+    "status": "pending"
   }
 ]

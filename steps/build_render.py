@@ -19,11 +19,13 @@ from __future__ import annotations
 
 import html
 import sys
-from pathlib import Path
 
+import env
 import svod
 
-OUT = Path(__file__).resolve().parent / "report.html"
+env.load_dotenv()
+
+OUT = env.data_path("report.html")
 
 
 def render(state: dict) -> str:
@@ -51,6 +53,7 @@ def render(state: dict) -> str:
 
 
 def main() -> int:
+    env.ensure_data_dir()
     state = svod.load_state()
     OUT.write_text(render(state), encoding="utf-8")
     print(f"render: {OUT.name} обновлён ({len(state['topics'])} тем)")
