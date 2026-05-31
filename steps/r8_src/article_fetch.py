@@ -19,6 +19,7 @@ HTML-фикстуре — без сети, детерминированно.
 
 from __future__ import annotations
 
+import http.client
 import json
 import re
 import sys
@@ -112,14 +113,34 @@ def save_cache(cache: dict) -> None:
                      encoding="utf-8")
 
 
-def fetch_html(url: str) -> str:
+def fetch_html(url: str, retries: int = 3) -> str:
+    """Скачать HTML с повторами; терпимо к обрыву chunked-ответа (IncompleteRead)."""
     scheme = urlsplit(url).scheme.lower()
     if scheme not in ("http", "https"):
         raise ValueError(f"недопустимая схема ссылки: {scheme!r}")
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
-        raw = resp.read()
-    return raw.decode("utf-8", errors="replace")
+    last_exc: Exception | None = None
+    for _ in range(retries):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+                chunks: list[bytes] = []
+                while True:
+                    try:
+                        chunk = resp.read(65536)
+                        if not chunk:
+                            break
+                        chunks.append(chunk)
+                    except http.client.IncompleteRead as exc:
+                        if exc.partial:
+                            chunks.append(exc.partial)
+                        break
+                raw = b"".join(chunks)
+            if raw:
+                return raw.decode("utf-8", errors="replace")
+        except (urllib.error.URLError, ValueError, OSError,
+                http.client.IncompleteRead) as exc:
+            last_exc = exc
+    raise last_exc or RuntimeError(f"пустой ответ: {url}")
 
 
 def append_articles(rows: list[dict]) -> None:
@@ -161,9 +182,10 @@ def main(argv: list[str] | None = None) -> int:
             if len(batch) >= 20:
                 append_articles(batch)
                 batch = []
-        except (urllib.error.URLError, ValueError, OSError) as exc:
+        except Exception as exc:
             failed += 1
             cache[link] = f"error: {exc}"
+            print(f"  {r.get('source', '?'):14s} ОШИБКА: {link[:70]} — {exc}")
     if batch:
         append_articles(batch)
     save_cache(cache)

@@ -28,6 +28,10 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+import env
+
+env.load_dotenv()
+
 ROOT = Path(__file__).resolve().parent
 RAW = ROOT / "raw.jsonl"
 CANDIDATES = ROOT / "candidates.jsonl"

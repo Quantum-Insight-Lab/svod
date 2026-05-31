@@ -12,6 +12,7 @@ articles.jsonl
 article_cache.json
 article_extract_cache.json
 .env
+.venv/
 __pycache__/
 *.pyc
 *.json.tmp
