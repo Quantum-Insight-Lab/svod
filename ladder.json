@@ -136,7 +136,7 @@
       "python steps/check_r9.py"
     ],
     "approved": true,
-    "status": "passed"
+    "status": "shipped"
   },
   {
     "id": "R10",
