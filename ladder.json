@@ -149,7 +149,7 @@
       "python steps/check_r10.py"
     ],
     "approved": true,
-    "status": "pending"
+    "status": "passed"
   },
   {
     "id": "R11",
