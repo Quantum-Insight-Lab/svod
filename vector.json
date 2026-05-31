@@ -1,6 +1,6 @@
 {
   "text": "Храповик ходит по статьям, собирает утверждения, СВОД наполняется.",
   "slice_size": 4,
-  "loc_budget_per_slice": 800,
-  "intent_cone_threshold": 0.8
+  "loc_budget_per_slice": 2500,
+  "intent_cone_threshold": 0.75
 }

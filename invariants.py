@@ -35,12 +35,21 @@ def _tokens(text: str) -> set[str]:
     return {t.lower() for t in _token_re.findall(text) if len(t) > 2}
 
 
+def _stem(tok: str) -> str:
+    """Грубый стем для русского: первые 4 символа или всё слово."""
+    t = tok.lower()
+    return t[:4] if len(t) >= 4 else t
+
+
 def intent_cosine(a: str, b: str) -> float:
     ta, tb = _tokens(a), _tokens(b)
     if not ta or not tb:
         return 0.0
-    inter = len(ta & tb)
-    return inter / (len(ta) * len(tb)) ** 0.5
+    sa, sb = {_stem(t) for t in ta}, {_stem(t) for t in tb}
+    inter = len(sa & sb)
+    if not inter:
+        return 0.0
+    return inter / (len(sa) * len(sb)) ** 0.5
 
 
 def baseline_brier() -> float:
