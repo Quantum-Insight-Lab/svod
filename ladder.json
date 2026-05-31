@@ -175,6 +175,6 @@
       "python steps/check_r12.py"
     ],
     "approved": true,
-    "status": "passed"
+    "status": "shipped"
   }
 ]
