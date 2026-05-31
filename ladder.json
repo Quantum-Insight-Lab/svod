@@ -148,7 +148,7 @@
     "checks": [
       "python steps/check_r10.py"
     ],
-    "approved": false,
+    "approved": true,
     "status": "pending"
   },
   {
